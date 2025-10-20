@@ -294,7 +294,7 @@ function RotatingPlanet({ planetData }: Props) {
         let amp = 1, freq = 1;
         for (let o = 0; o < baseOctaves; o++) {
           elev += noise2D(nx * freq * 2, ny * freq * 2) * amp;
-          elev += noise2D(nz * freq * 2, ny * freq * 2) * amp * 0.5;
+          elev += noise2D(nz * freq * 2, nx * freq * 2) * amp * 0.5;
           amp *= persistence;
           freq *= lacunarity;
         }
@@ -390,8 +390,8 @@ function RotatingPlanet({ planetData }: Props) {
         varying float vY;
         void main() {
           float absY = abs(vY);
-          // Fade starts at planet edge (1.0) and goes to 0 at full length
-          float fade = smoothstep(uLength, 1.0, absY);
+          // Fade from full opacity at planet edge (1.0) to transparent at full length (uLength)
+          float fade = 1.0 - smoothstep(1.0, uLength, absY);
           // Inner glow near planet
           float glow = 1.0 - smoothstep(0.8, 1.2, absY);
           float alpha = mix(fade * 0.7, 1.0, glow * 0.8);
