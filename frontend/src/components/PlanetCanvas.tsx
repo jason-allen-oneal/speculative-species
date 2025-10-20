@@ -67,8 +67,10 @@ function RotatingPlanet({ planetData }: Props) {
     planetData?.parameters?.stellar?.axial_tilt_deg ??
     23.5;
   const planetScale =
+    planetData?.generated?.parameters?.physical?.radius_scale ??
     planetData?.parameters?.physical?.radius_scale ?? 1.0;
   const tectonicLevel =
+    planetData?.generated?.parameters?.geology?.tectonic_activity_level ??
     planetData?.parameters?.geology?.tectonic_activity_level ?? 3.0;
 
   // === Rotation speed update ===
@@ -97,7 +99,7 @@ function RotatingPlanet({ planetData }: Props) {
     const data = img.data;
 
     const seaLevel = oceanFraction;
-    const baseOctaves = 5;
+    const baseOctaves = Math.round(5 + (tectonicLevel / 10) * 3);
     const persistence = 0.55;
     const lacunarity = 1.9;
     const blendEdge = 32;
@@ -162,7 +164,10 @@ function RotatingPlanet({ planetData }: Props) {
         }
 
         // fix black land: clamp, gamma correct, brighten slightly
-        const blended = new THREE.Color().lerpColors(new THREE.Color("#1a3c8a"), color, blend);
+        // Only blend near coastline (blend < 0.95), keep land colors pure
+        const blended = blend > 0.95 
+          ? color 
+          : new THREE.Color().lerpColors(new THREE.Color("#1a3c8a"), color, blend);
         blended.offsetHSL(0, 0.05, 0.05);
         blended.r = Math.max(0.02, Math.min(1.0, blended.r));
         blended.g = Math.max(0.02, Math.min(1.0, blended.g));
