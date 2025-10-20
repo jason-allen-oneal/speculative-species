@@ -1,0 +1,58 @@
+{
+  "planet": {
+    "id": "world_001",
+    "name": "Aethara",
+    "seed": 98274,
+    "created": "2025-10-19T00:00:00Z"
+  },
+  "parameters": {
+    "stellar": {
+      "star_type": "G2V",
+      "orbital_distance_au": 0.1,
+      "axial_tilt_deg": 23.5,
+      "rotation_period_hours": 24,
+      "year_length_days": 365
+    },
+    "physical": {
+      "radius_km": 6371,
+      "mass_kg": 5.97e+24,
+      "gravity_g": 1.0,
+      "density_g_cm3": 5.51,
+      "magnetosphere_strength": 1.0,
+      "radius_scale": 1
+    },
+    "atmosphere": {
+      "surface_pressure_atm": 1,
+      "composition": {
+        "N2": 0.74,
+        "O2": 0.21,
+        "CO2": 0.04,
+        "CH4": 0.01
+      },
+      "cloud_cover_fraction": 0.4,
+      "greenhouse_index": 1.05
+    },
+    "hydrology": {
+      "ocean_fraction": 0.68,
+      "ice_fraction": 0.05,
+      "tectonic_activity_level": 3,
+      "topographic_variation": 0.55
+    },
+    "climate": {
+      "mean_surface_temp_k": 291.5,
+      "wind_strength_mps": 20,
+      "precipitation_variability": 0.4,
+      "storm_frequency_index": 1.2
+    },
+    "physics": {
+      "gravity_g": 1
+    },
+    "geology": {
+      "tectonic_activity_level": 3
+    }
+  },
+  "metadata": {
+    "last_updated": "2025-10-19T20:00:00Z",
+    "version": "0.1-alpha"
+  }
+}
