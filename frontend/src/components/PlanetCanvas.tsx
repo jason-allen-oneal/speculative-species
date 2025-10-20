@@ -1,10 +1,9 @@
 "use client";
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useRef, useMemo, useEffect, useState } from "react";
 import { createNoise2D } from "simplex-noise";
-import { TextureLoader } from "three";
 
 interface PlanetData {
   generated?: {
@@ -52,10 +51,29 @@ interface Props {
 function Star({ orbitalDistance }: { orbitalDistance: number }) {
   const starRef = useRef<THREE.Mesh>(null);
   const distanceFactor = Math.max(0.5, Math.min(orbitalDistance, 5));
-  const glowTexture = useLoader(
-    TextureLoader,
-    "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0.png"
-  );
+  
+  // Create glow texture procedurally
+  const glowTexture = useMemo(() => {
+    const size = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    
+    const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+    gradient.addColorStop(0.2, "rgba(255, 250, 220, 0.8)");
+    gradient.addColorStop(0.4, "rgba(255, 245, 180, 0.4)");
+    gradient.addColorStop(0.7, "rgba(255, 240, 140, 0.1)");
+    gradient.addColorStop(1, "rgba(255, 235, 100, 0)");
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
+  
   // Intensity decreases with square of distance
   const intensity = 3.0 / Math.pow(distanceFactor, 2);
   // Scale decreases with distance to simulate apparent size
