@@ -294,7 +294,7 @@ function RotatingPlanet({ planetData }: Props) {
         let amp = 1, freq = 1;
         for (let o = 0; o < baseOctaves; o++) {
           elev += noise2D(nx * freq * 2, ny * freq * 2) * amp;
-          elev += noise2D(nz * freq * 2, nx * freq * 2) * amp * 0.5;
+          elev += noise2D(nz * freq * 2, ny * freq * 2) * amp * 0.5;
           amp *= persistence;
           freq *= lacunarity;
         }
