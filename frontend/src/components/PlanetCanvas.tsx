@@ -102,6 +102,47 @@ function Star({ orbitalDistance }: { orbitalDistance: number }) {
   );
 }
 
+/* === ATMOSPHERE GLOW === */
+function AtmosphereGlow({ scale }: { scale: number }) {
+  const atmosphereRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(({ camera }) => {
+    if (atmosphereRef.current) {
+      atmosphereRef.current.quaternion.copy(camera.quaternion);
+    }
+  });
+
+  return (
+    <mesh ref={atmosphereRef} scale={[scale * 1.15, scale * 1.15, scale * 1.15]}>
+      <sphereGeometry args={[1, 64, 64]} />
+      <shaderMaterial
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        side={THREE.BackSide}
+        uniforms={{
+          uColor: { value: new THREE.Color(0.5, 0.7, 1.0) }
+        }}
+        vertexShader={`
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `}
+        fragmentShader={`
+          uniform vec3 uColor;
+          varying vec3 vNormal;
+          void main() {
+            float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+            gl_FragColor = vec4(uColor, 1.0) * intensity;
+          }
+        `}
+      />
+    </mesh>
+  );
+}
+
 /* === CLOUDS === */
 function CloudLayer({ cloudCover, rotationSpeed, scale }: { cloudCover: number; rotationSpeed: number; scale: number }) {
   const cloudRef = useRef<THREE.Mesh>(null);
@@ -233,32 +274,31 @@ function RotatingPlanet({ planetData }: Props) {
     const baseOctaves = Math.max(3, Math.min(8, Math.floor(3 + tectonicLevel * 0.5)));
     const persistence = 0.5 + tectonicLevel * 0.015;
     const lacunarity = 1.8 + tectonicLevel * 0.02;
-    const blendEdge = 32;
 
-    // Generate map
+    // Generate map with seamless wrapping
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
-        const nx = (x / size) * 2 - 1;
-        const ny = (y / size) * 2 - 1;
+        // Use spherical coordinates for seamless wrapping
+        const u = x / size;
+        const v = y / size;
+        const theta = u * Math.PI * 2; // longitude
+        const phi = v * Math.PI; // latitude
+        
+        // Convert to 3D coordinates on unit sphere
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
 
-        // seamless mirrored noise
-        let elevA = 0, elevB = 0;
+        // Generate seamless noise using spherical coordinates
+        let elev = 0;
         let amp = 1, freq = 1;
         for (let o = 0; o < baseOctaves; o++) {
-          elevA += noise2D(nx * freq * 2, ny * freq * 2) * amp;
-          elevB += noise2D((nx - 2) * freq * 2, ny * freq * 2) * amp;
+          elev += noise2D(nx * freq * 2, ny * freq * 2) * amp;
+          elev += noise2D(nz * freq * 2, ny * freq * 2) * amp * 0.5;
           amp *= persistence;
           freq *= lacunarity;
         }
-
-        elevA = (elevA + 1) / 2;
-        elevB = (elevB + 1) / 2;
-
-        // crossfade horizontally
-        let t = 1;
-        if (x < blendEdge) t = x / blendEdge;
-        else if (x > size - blendEdge) t = (size - x) / blendEdge;
-        const elev = THREE.MathUtils.lerp(elevB, elevA, t);
+        elev = (elev + 1) / 2;
 
         // smooth height distribution
         const e = Math.pow(elev, 1.25);
@@ -309,18 +349,10 @@ function RotatingPlanet({ planetData }: Props) {
       }
     }
 
-    // duplicate first column to last BEFORE draw
-    for (let y = 0; y < size; y++) {
-      const i0 = (y * size + 0) * 4;
-      const i1 = (y * size + (size - 1)) * 4;
-      for (let k = 0; k < 4; k++) data[i1 + k] = data[i0 + k];
-    }
-
     ctx.putImageData(img, 0, 0);
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.x = 1.0001;
     tex.magFilter = THREE.LinearFilter;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.needsUpdate = true;
@@ -330,26 +362,46 @@ function RotatingPlanet({ planetData }: Props) {
   /* === AXIS LINE === */
   useEffect(() => {
     if (axisRef.current) return;
-    const pts = [new THREE.Vector3(0, -1.6, 0), new THREE.Vector3(0, 1.6, 0)];
+    
+    // Extended axis line that goes far into space
+    const axisLength = 3.5;
+    const pts = [
+      new THREE.Vector3(0, -axisLength, 0), 
+      new THREE.Vector3(0, axisLength, 0)
+    ];
     const geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    
     const material = new THREE.ShaderMaterial({
       transparent: true,
-      uniforms: { uColor: { value: new THREE.Color(0xffffff) } },
+      uniforms: { 
+        uColor: { value: new THREE.Color(0xffffff) },
+        uLength: { value: axisLength }
+      },
       vertexShader: `
         varying float vY;
-        void main(){vY=position.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
+        void main() {
+          vY = position.y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
       `,
       fragmentShader: `
         uniform vec3 uColor;
+        uniform float uLength;
         varying float vY;
-        void main(){
-          float alpha=1.0-abs(vY)/1.6;
-          gl_FragColor=vec4(uColor,alpha*0.5);
+        void main() {
+          float absY = abs(vY);
+          // Fade from full opacity at planet edge (1.0) to transparent at full length (uLength)
+          float fade = 1.0 - smoothstep(1.0, uLength, absY);
+          // Inner glow near planet
+          float glow = 1.0 - smoothstep(0.8, 1.2, absY);
+          float alpha = mix(fade * 0.7, 1.0, glow * 0.8);
+          gl_FragColor = vec4(uColor, alpha);
         }
       `,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
+    
     axisRef.current = new THREE.Line(geometry, material);
     tiltGroupRef.current?.add(axisRef.current);
   }, []);
@@ -375,12 +427,14 @@ function RotatingPlanet({ planetData }: Props) {
         {texture && (
           <meshStandardMaterial
             map={texture}
-            roughness={0.85}
-            metalness={0.05}
-            normalScale={new THREE.Vector2(0.5, 0.5)}
+            roughness={0.7}
+            metalness={0.1}
+            normalScale={new THREE.Vector2(0.8, 0.8)}
+            envMapIntensity={0.5}
           />
         )}
       </mesh>
+      <AtmosphereGlow scale={visualScale} />
       <CloudLayer cloudCover={cloudCover} rotationSpeed={rotationSpeed} scale={visualScale} />
     </group>
   );
@@ -388,20 +442,26 @@ function RotatingPlanet({ planetData }: Props) {
 
 /* === MAIN CANVAS === */
 export default function PlanetCanvas({ planetData }: Props) {
+  const orbitalDistance = planetData?.generated?.parameters?.stellar?.orbital_distance_au ??
+    planetData?.parameters?.stellar?.orbital_distance_au ?? 1;
+  
   return (
     <div className="w-full h-full bg-black flex items-center justify-center">
-      <Canvas camera={{ position: [0, 0, 3] }}>
-        <Star
-          orbitalDistance={
-            planetData?.generated?.parameters?.stellar?.orbital_distance_au ??
-            planetData?.parameters?.stellar?.orbital_distance_au ??
-            1
-          }
+      <Canvas camera={{ position: [0, 0, 3] }} gl={{ antialias: true, alpha: false }}>
+        <Star orbitalDistance={orbitalDistance} />
+        {/* Improved lighting setup for realism */}
+        <ambientLight intensity={0.15} />
+        <hemisphereLight 
+          args={["#ffffff", "#080820", 0.3]} 
         />
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[5, 5, 5]} intensity={1.2} />
+        <directionalLight 
+          position={[4 * Math.max(0.5, orbitalDistance), 3 * Math.max(0.5, orbitalDistance), -5 * Math.max(0.5, orbitalDistance)]} 
+          intensity={1.5} 
+          color="#fff5c0"
+          castShadow
+        />
         <RotatingPlanet planetData={planetData} />
-        <OrbitControls enableZoom />
+        <OrbitControls enableZoom enablePan={false} />
       </Canvas>
     </div>
   );
