@@ -16,7 +16,7 @@ export default function HomePage() {
   const [planetSize, setPlanetSize] = useState(1.0); // NEW
 
   // === Generated Planet Data ===
-  const [planetData, setPlanetData] = useState<Record<string, unknown> | null>(null);
+  const [planetData, setPlanetData] = useState<any>(null);
 
   // === API Call ===
   const handleGenerate = async (vals: Record<string, number>) => {
