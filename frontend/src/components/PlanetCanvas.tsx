@@ -57,7 +57,8 @@ function Star({ orbitalDistance }: { orbitalDistance: number }) {
     const size = 256;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error('Could not get 2D context');
     
     const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
     gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
@@ -111,7 +112,8 @@ function CloudLayer({ cloudCover, rotationSpeed, scale }: { cloudCover: number; 
     const size = 512;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error('Could not get 2D context');
     const img = ctx.createImageData(size, size);
     const data = img.data;
 
@@ -221,7 +223,8 @@ function RotatingPlanet({ planetData }: Props) {
     const size = 1024;
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error('Could not get 2D context');
     const img = ctx.createImageData(size, size);
     const data = img.data;
 
