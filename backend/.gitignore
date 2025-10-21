@@ -1,0 +1,9 @@
+# Temporary config files
+tmp_config_*.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
