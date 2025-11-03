@@ -105,11 +105,12 @@ export default function ControlPanel({
         },
         {
           id: "cloudCover",
-          label: "Cloud Cover (%)",
+          label: "Cloud Cover (%) [DISABLED]",
           min: 0,
           max: 1,
           step: 0.05,
-          text: "Proportion of the sky covered by clouds. High values brighten the planet (increased albedo) but cool the surface slightly.",
+          text: "Proportion of the sky covered by clouds. Currently disabled - does not affect planet rendering.",
+          disabled: true,
         },
         {
           id: "tectonic",
@@ -129,10 +130,10 @@ export default function ControlPanel({
         },
       ].map((slider) => (
         <Tooltip key={slider.id} id={slider.id} text={slider.text}>
-          <label className="flex flex-col items-center text-xs text-gray-200 whitespace-nowrap">
+          <label className={`flex flex-col items-center text-xs text-gray-200 whitespace-nowrap ${slider.disabled ? 'opacity-50' : ''}`}>
             <span>
               {slider.label}:{" "}
-              {slider.id === "oceanFraction" || slider.id === "cloudCover"
+              {slider.id === "ocean" || slider.id === "cloudCover"
                 ? Math.round(localValues[slider.id as keyof typeof localValues] * 100) + "%"
                 : localValues[slider.id as keyof typeof localValues].toFixed(2)}
             </span>
@@ -146,6 +147,7 @@ export default function ControlPanel({
                 handleChange(slider.id as keyof typeof localValues, parseFloat(e.target.value))
               }
               className="w-28 accent-blue-500"
+              disabled={slider.disabled}
             />
           </label>
         </Tooltip>
