@@ -11,13 +11,13 @@ const MAX_OCEAN_DEPTH_KM = 11; // Approximate extreme depth for Earth-like world
 const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
 export default function Planet({
-    gravity,
+    gravity: _gravity,
     ocean,
     axialTilt,
-    pressure,
-    orbitalDist,
+    pressure: _pressure,
+    orbitalDist: _orbitalDist,
     rotationPeriod,
-    cloudCover,
+    cloudCover: _cloudCover,
     tectonic,
     planetSize,
     onPlanetClick,
@@ -31,9 +31,6 @@ export default function Planet({
     const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null); 
     const [normalMap, setNormalMap] = useState<THREE.CanvasTexture | null>(null); 
     const [displacementMap, setDisplacementMap] = useState<THREE.CanvasTexture | null>(null); 
-    const [rotationSpeed, setRotationSpeed] = useState(
-      () => (2 * Math.PI / VISUAL_DAY_SECONDS) * (24 / rotationPeriod)
-    );
     const heightFieldRef = useRef<Float32Array | null>(null);
     const displacementFieldRef = useRef<Float32Array | null>(null);
     const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE, landRange: 0.5, oceanRange: 0.1 });
@@ -46,11 +43,11 @@ export default function Planet({
     // Bias is half of the scale, used to center the displacement around the sphere's radius.
     const DISPLACEMENT_BIAS = -DISPLACEMENT_SCALE * 0.5;
   
-    // === Rotation speed update ===
-    useEffect(() => {
-      const newSpeed = (2 * Math.PI / VISUAL_DAY_SECONDS) * (24 / rotationPeriod);
-      setRotationSpeed(newSpeed);
-    }, [rotationPeriod]);
+    // === Rotation speed calculation ===
+    const rotationSpeed = useMemo(
+      () => (2 * Math.PI / VISUAL_DAY_SECONDS) * (24 / rotationPeriod),
+      [rotationPeriod]
+    );
   
     const axialTiltRad = THREE.MathUtils.degToRad(axialTilt);
   
@@ -239,6 +236,7 @@ export default function Planet({
       colorTex.magFilter = THREE.LinearFilter;
       colorTex.minFilter = THREE.LinearMipmapLinearFilter;
       colorTex.needsUpdate = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Texture generation requires synchronizing external Three.js state
       setTexture(colorTex);
   
       nCtx.putImageData(normalImg, 0, 0);
@@ -304,9 +302,9 @@ export default function Planet({
         blending: THREE.AdditiveBlending,
       });
       
-      // @ts-ignore
+      // @ts-expect-error - Line type doesn't match Group.add expected type
       axisRef.current = new THREE.Line(geometry, material);
-      // @ts-ignore
+      // @ts-expect-error - tiltGroupRef.current is a Group but typed as Group | null
       tiltGroupRef.current.add(axisRef.current);
     }, []);
   
@@ -325,7 +323,7 @@ export default function Planet({
     // === Camera adjustment ===
     const visualScale = planetSize;
     useEffect(() => {
-      camera.position.z = 3 * planetSize;
+      camera.position.set(camera.position.x, camera.position.y, 3 * planetSize);
     }, [planetSize, camera]);
   
     // Ensure high detail sphere geometry is used for displacement

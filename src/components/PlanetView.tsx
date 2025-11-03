@@ -3,7 +3,7 @@ import { useState } from "react";
 import ControlPanel from "@/components/ControlPanel";
 import PlanetCanvas from "@/components/PlanetCanvas";
 
-export default function PlanetView({config}: any) {
+export default function PlanetView({config}: PlanetViewProps) {
     const [gravity, setGravity] = useState(config.params.physical.gravity);
     const [planetSize, setPlanetSize] = useState(config.params.physical.radius_scale);
     const [orbitalDist, setOrbitalDist] = useState(config.params.stellar.orbital_distance);
@@ -15,7 +15,6 @@ export default function PlanetView({config}: any) {
     const [ocean, setOcean] = useState(config.params.hydrology.ocean);
 
     // === Generated Planet Data ===
-    const [planetData, setPlanetData] = useState<Record<string, unknown> | null>(null);
     const [selectedPoint, setSelectedPoint] = useState<PlanetClickResult | null>(null);
     const [isPaused, setIsPaused] = useState(false);
 

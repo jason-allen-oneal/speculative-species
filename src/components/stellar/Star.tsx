@@ -36,7 +36,7 @@ export default function Star({ orbitalDistance }: { orbitalDistance: number }) {
   
     useFrame(({ camera }) => {
       if (starRef.current) {
-          // @ts-ignore
+          // @ts-expect-error - starRef.current is a Mesh but typed as null
           starRef.current.quaternion.copy(camera.quaternion);
       }
     });
