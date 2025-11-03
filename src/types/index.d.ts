@@ -20,6 +20,32 @@ interface ControlPanelProps {
     onGenerate: (vals: Record<string, number>) => void;
 }
 
+interface PlanetConfig {
+    params: {
+        physical: {
+            gravity: number;
+            radius_scale: number;
+        };
+        stellar: {
+            orbital_distance: number;
+            rotation_period_hours: number;
+            axial_tilt: number;
+        };
+        atmosphere: {
+            surface_pressure: number;
+            cloud_cover: number;
+        };
+        hydrology: {
+            tectonic_activity: number;
+            ocean: number;
+        };
+    };
+}
+
+interface PlanetViewProps {
+    config: PlanetConfig;
+}
+
 interface PlanetClickResult {
     latitude: number;
     longitude: number;
@@ -43,6 +69,7 @@ interface PlanetCanvasProps {
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
+    isPaused?: boolean;
 }
 
 interface PlanetProps {
@@ -56,4 +83,6 @@ interface PlanetProps {
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
+    isPaused?: boolean;
+    markerPosition?: [number, number, number];
 }

@@ -5,17 +5,17 @@ export function createNoise2D() {
       // Using Math.random() for simplicity, a true seed would be better for consistency
       p[i] = Math.floor(Math.random() * 256);
     }
-    const perm: any[] = [];
+    const perm: number[] = [];
     for (let i = 0; i < 512; i++) {
       perm[i] = p[i & 255];
     }
   
     // Utility functions
-    const fade = (t: any) => t * t * t * (t * (t * 6 - 15) + 10);
-    const lerp = (a: any, b: any, t: any) => (1 - t) * a + t * b;
+    const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a: number, b: number, t: number) => (1 - t) * a + t * b;
   
     // Gradient function for 2D noise (simplified)
-    const grad = (hash: any, x: any, y: any) => {
+    const grad = (hash: number, x: number, y: number) => {
       const h = hash & 15;
       const u = h < 8 ? x : y;
       const v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
@@ -23,10 +23,10 @@ export function createNoise2D() {
     };
   
     // The function returned to the component (the actual noise calculator)
-    return (x: any, y: any) => {
+    return (x: number, y: number) => {
       // Determine grid cell coordinates
-      let X = Math.floor(x) & 255;
-      let Y = Math.floor(y) & 255;
+      const X = Math.floor(x) & 255;
+      const Y = Math.floor(y) & 255;
   
       // Relative coordinates of the point in the cell
       x -= Math.floor(x);
@@ -37,8 +37,8 @@ export function createNoise2D() {
       const v = fade(y);
   
       // Hash coordinates of the 4 square corners
-      let A = perm[X] + Y;
-      let B = perm[X + 1] + Y;
+      const A = perm[X] + Y;
+      const B = perm[X + 1] + Y;
   
       // Interpolate between the 4 corners
       const result = lerp(
