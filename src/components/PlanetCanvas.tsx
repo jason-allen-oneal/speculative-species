@@ -1,5 +1,6 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
+import { useState } from "react";
 import Star from "./stellar/Star";
 import Planet from "./stellar/Planet";
 
@@ -14,12 +15,22 @@ export default function PlanetCanvas({
     tectonic,
     planetSize,
     onPlanetClick,
+    isPaused,
 }: PlanetCanvasProps) {
+    const [markerPosition, setMarkerPosition] = useState<[number, number, number] | undefined>(undefined);
+
     const sunPosition = [
         4 * Math.max(0.5, orbitalDist), 
         3 * Math.max(0.5, orbitalDist), 
         -5 * Math.max(0.5, orbitalDist)
     ] as [number, number, number];
+
+    const handlePlanetClick = (info: PlanetClickResult) => {
+        setMarkerPosition(info.worldPosition);
+        if (onPlanetClick) {
+            onPlanetClick(info);
+        }
+    };
 
     return (
         <div className="w-full h-full bg-black flex items-center justify-center">
@@ -51,7 +62,9 @@ export default function PlanetCanvas({
                     cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
-                    onPlanetClick={onPlanetClick}
+                    onPlanetClick={handlePlanetClick}
+                    isPaused={isPaused}
+                    markerPosition={markerPosition}
                 />
             </Canvas>
         </div>

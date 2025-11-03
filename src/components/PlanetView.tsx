@@ -17,6 +17,7 @@ export default function PlanetView({config}: any) {
     // === Generated Planet Data ===
     const [planetData, setPlanetData] = useState<Record<string, unknown> | null>(null);
     const [selectedPoint, setSelectedPoint] = useState<PlanetClickResult | null>(null);
+    const [isPaused, setIsPaused] = useState(false);
 
     // === API Call ===
     const handleGenerate = async () => {
@@ -61,7 +62,11 @@ export default function PlanetView({config}: any) {
                     cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
-                    onPlanetClick={setSelectedPoint}
+                    onPlanetClick={(info) => {
+                        setSelectedPoint(info);
+                        setIsPaused(true);
+                    }}
+                    isPaused={isPaused}
                 />
                 {selectedPoint && (
                     <div className="absolute bottom-6 left-6 bg-gray-900/85 border border-gray-700 rounded-lg px-4 py-3 text-sm shadow-lg space-y-1">

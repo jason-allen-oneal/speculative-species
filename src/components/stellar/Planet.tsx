@@ -21,6 +21,8 @@ export default function Planet({
     tectonic,
     planetSize,
     onPlanetClick,
+    isPaused,
+    markerPosition,
 }: PlanetProps) {
     const planetRef = useRef<THREE.Mesh | null>(null);
     const tiltGroupRef = useRef<THREE.Group | null>(null);
@@ -311,10 +313,13 @@ export default function Planet({
     // === Rotation & tilt ===
     useFrame((_, delta) => {
       if (!planetRef.current || !tiltGroupRef.current) return;
-      // @ts-ignore
+      // @ts-expect-error - tiltGroupRef.current is a Group but typed as Group | null
       tiltGroupRef.current.rotation.z = axialTiltRad;
-      // @ts-ignore
-      planetRef.current.rotation.y += rotationSpeed * delta;
+      // Only rotate if not paused
+      if (!isPaused) {
+        // @ts-expect-error - planetRef.current is a Mesh but typed as Mesh | null
+        planetRef.current.rotation.y += rotationSpeed * delta;
+      }
     });
   
     // === Camera adjustment ===
@@ -446,6 +451,17 @@ export default function Planet({
             />
           )}
         </mesh>
+        {/* Marker at clicked position */}
+        {markerPosition && (
+          <mesh position={markerPosition}>
+            <sphereGeometry args={[0.02 * planetSize, 16, 16]} />
+            <meshStandardMaterial 
+              color="#ff0000" 
+              emissive="#ff0000"
+              emissiveIntensity={0.8}
+            />
+          </mesh>
+        )}
       </group>
     );
   }

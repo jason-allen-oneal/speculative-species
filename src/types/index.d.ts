@@ -43,6 +43,7 @@ interface PlanetCanvasProps {
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
+    isPaused?: boolean;
 }
 
 interface PlanetProps {
@@ -56,4 +57,6 @@ interface PlanetProps {
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
+    isPaused?: boolean;
+    markerPosition?: [number, number, number];
 }
