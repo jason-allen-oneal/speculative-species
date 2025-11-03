@@ -1,8 +1,18 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Requirements
+
+- Node.js 20.9.0 or higher
+
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -19,6 +29,30 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Testing
+
+This project includes a comprehensive test suite using Jest and React Testing Library.
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (interactive)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
+
+## Project Documentation
+
+- [TESTING.md](TESTING.md) - Testing guide and best practices
+- [TODO.md](TODO.md) - Comprehensive task list and implementation plans
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Summary of completed features
+- [PHYSICS_IMPLEMENTATION_PLAN.md](PHYSICS_IMPLEMENTATION_PLAN.md) - Physics system roadmap
 
 ## Learn More
 
