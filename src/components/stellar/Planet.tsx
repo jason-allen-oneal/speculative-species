@@ -344,18 +344,18 @@ export default function Planet({
         let u: number, v: number;
         if (event.uv) {
           // UV coordinates are directly available from raycaster
-          u = THREE.MathUtils.clamp(event.uv.x, 0, 1);
-          v = THREE.MathUtils.clamp(event.uv.y, 0, 1);
+          u = event.uv.x;
+          v = event.uv.y;
         } else {
           // Fallback: calculate from the face normal instead of the intersection point
           // This avoids issues with displacement mapping causing incorrect projections
           const face = event.face;
           if (!face) return;
           
-          // Use the face normal in local space to determine surface coordinates
-          const localNormal = face.normal.clone();
-          mesh.worldToLocal(localNormal);
-          localNormal.normalize();
+          // Transform the face normal from world space to local space using the normal matrix
+          const worldNormal = face.normal.clone().normalize();
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+          const localNormal = worldNormal.applyMatrix3(normalMatrix).normalize();
           
           const phi = Math.acos(THREE.MathUtils.clamp(localNormal.y, -1, 1));
           let theta = Math.atan2(localNormal.z, localNormal.x);
