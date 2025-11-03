@@ -44,7 +44,9 @@ export default function Planet({
     // Derive topographic variation from tectonic activity and gravity
     // Higher tectonic activity = more variation, higher gravity = less variation (mountains can't be as tall)
     // Base value normalized to Earth (tectonic=5, gravity=1.0 => ~0.3)
-    const baseTopographicVariation = THREE.MathUtils.clamp(tectonic / 16.67, 0, 1); // tectonic 5 => 0.3
+    // Normalization: Earth's tectonic value of 5 divided by 16.67 yields 0.3 baseline variation
+    const TECTONIC_NORMALIZATION_FACTOR = 16.67;
+    const baseTopographicVariation = THREE.MathUtils.clamp(tectonic / TECTONIC_NORMALIZATION_FACTOR, 0, 1);
     const gravityFactor = Math.min(2.0, 1.0 / gravity); // Lower gravity allows more variation
     const topographicVariation = THREE.MathUtils.clamp(baseTopographicVariation * gravityFactor, 0, 1);
     
@@ -272,7 +274,7 @@ export default function Planet({
       displacementFieldRef.current = displacementField;
       sampleMetaRef.current = { seaLevel, size };
 
-    }, [oceanFraction, tectonic, gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
+    }, [oceanFraction, tectonic, _gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
   
   
     // === AXIS LINE === (Keeping existing code)
@@ -441,7 +443,7 @@ export default function Planet({
           worldPosition: [world.x, world.y, world.z],
         });
       },
-      [onPlanetClick, planetSize, MAX_LAND_ELEVATION_KM]
+      [onPlanetClick, planetSize, gravity, MAX_LAND_ELEVATION_KM]
     );
   
     return (
