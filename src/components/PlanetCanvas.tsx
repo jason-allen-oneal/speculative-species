@@ -11,6 +11,7 @@ export default function PlanetCanvas({
     pressure,
     orbitalDist,
     rotationPeriod,
+    cloudCover,
     tectonic,
     planetSize,
     onPlanetClick,
@@ -58,6 +59,7 @@ export default function PlanetCanvas({
                     pressure={pressure}
                     orbitalDist={orbitalDist}
                     rotationPeriod={rotationPeriod}
+                    cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
                     onPlanetClick={handlePlanetClick}

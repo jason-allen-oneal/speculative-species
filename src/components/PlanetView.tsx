@@ -10,6 +10,7 @@ export default function PlanetView({config}: PlanetViewProps) {
     const [rotationPeriod, setRotationPeriod] = useState(config.params.stellar.rotation_period_hours);
     const [axialTilt, setAxialTilt] = useState(config.params.stellar.axial_tilt);
     const [pressure, setPressure] = useState(config.params.atmosphere.surface_pressure);
+    const [cloudCover, setCloudCover] = useState(config.params.atmosphere.cloud_cover);
     const [tectonic, setTectonic] = useState(config.params.hydrology.tectonic_activity);
     const [ocean, setOcean] = useState(config.params.hydrology.ocean);
 
@@ -33,6 +34,7 @@ export default function PlanetView({config}: PlanetViewProps) {
                 pressure={pressure}
                 orbitalDist={orbitalDist}
                 rotationPeriod={rotationPeriod}
+                cloudCover={cloudCover}
                 tectonic={tectonic}
                 planetSize={planetSize}
                 setPlanetSize={setPlanetSize}
@@ -42,6 +44,7 @@ export default function PlanetView({config}: PlanetViewProps) {
                 setPressure={setPressure}
                 setOrbitalDist={setOrbitalDist}
                 setRotationPeriod={setRotationPeriod}
+                setCloudCover={setCloudCover}
                 setTectonic={setTectonic}
                 onGenerate={handleGenerate}
             />
@@ -55,6 +58,7 @@ export default function PlanetView({config}: PlanetViewProps) {
                     pressure={pressure}
                     orbitalDist={orbitalDist}
                     rotationPeriod={rotationPeriod}
+                    cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
                     onPlanetClick={(info) => {

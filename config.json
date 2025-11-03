@@ -21,6 +21,7 @@
                 "CO2": 0.00042,
                 "CH4": 0.000002
             },
+            "cloud_cover": 0.67,
             "greenhouse_index": 1.0
         },
         "hydrology": {

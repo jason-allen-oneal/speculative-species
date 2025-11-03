@@ -17,6 +17,7 @@ export default function Planet({
     pressure: _pressure,
     orbitalDist: _orbitalDist,
     rotationPeriod,
+    cloudCover: _cloudCover,
     tectonic,
     planetSize,
     onPlanetClick,

@@ -9,6 +9,7 @@ export default function ControlPanel({
   pressure,
   orbitalDist,
   rotationPeriod,
+  cloudCover,
   tectonic,
   planetSize,
   setGravity,
@@ -17,6 +18,7 @@ export default function ControlPanel({
   setPressure,
   setOrbitalDist,
   setRotationPeriod,
+  setCloudCover,
   setTectonic,
   setPlanetSize,
   onGenerate,
@@ -28,6 +30,7 @@ export default function ControlPanel({
     pressure,
     orbitalDist,
     rotationPeriod,
+    cloudCover,
     tectonic,
     planetSize,
   });
@@ -39,6 +42,7 @@ export default function ControlPanel({
     setPressure(localValues.pressure);
     setOrbitalDist(localValues.orbitalDist);
     setRotationPeriod(localValues.rotationPeriod);
+    setCloudCover(localValues.cloudCover);
     setTectonic(localValues.tectonic);
     setPlanetSize(localValues.planetSize);
     onGenerate(localValues);
@@ -100,6 +104,15 @@ export default function ControlPanel({
           text: "Time taken for one full rotation. Shorter days spin the planet faster (stronger Coriolis effects and faster winds), longer days mean slower rotation and wider temperature swings.",
         },
         {
+          id: "cloudCover",
+          label: "Cloud Cover (%) [DISABLED]",
+          min: 0,
+          max: 1,
+          step: 0.05,
+          text: "Proportion of the sky covered by clouds. Currently disabled - does not affect planet rendering.",
+          disabled: true,
+        },
+        {
           id: "tectonic",
           label: "Tectonic Activity",
           min: 0,
@@ -117,10 +130,10 @@ export default function ControlPanel({
         },
       ].map((slider) => (
         <Tooltip key={slider.id} id={slider.id} text={slider.text}>
-          <label className="flex flex-col items-center text-xs text-gray-200 whitespace-nowrap">
+          <label className={`flex flex-col items-center text-xs text-gray-200 whitespace-nowrap ${slider.disabled ? 'opacity-50' : ''}`}>
             <span>
               {slider.label}:{" "}
-              {slider.id === "ocean"
+              {slider.id === "ocean" || slider.id === "cloudCover"
                 ? Math.round(localValues[slider.id as keyof typeof localValues] * 100) + "%"
                 : localValues[slider.id as keyof typeof localValues].toFixed(2)}
             </span>
@@ -134,6 +147,7 @@ export default function ControlPanel({
                 handleChange(slider.id as keyof typeof localValues, parseFloat(e.target.value))
               }
               className="w-28 accent-blue-500"
+              disabled={slider.disabled}
             />
           </label>
         </Tooltip>
