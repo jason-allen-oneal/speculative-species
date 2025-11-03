@@ -6,7 +6,7 @@ import { createNoise2D } from "@/lib/utils";
 
 const TEXTURE_SIZE = 2048; // Higher resolution for hyper-realism
 const SPHERE_DETAIL = 256; // High detail geometry (needs enough vertices for displacement)
-const MAX_LAND_ELEVATION_KM = 10; // Approximate extreme elevation for Earth-like worlds
+const MAX_LAND_ELEVATION_KM = 9; // Approximate extreme elevation for Earth-like worlds (Everest ~8.8km)
 const MAX_OCEAN_DEPTH_KM = 11; // Approximate extreme depth for Earth-like worlds
 const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
