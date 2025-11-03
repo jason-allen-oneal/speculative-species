@@ -38,6 +38,7 @@ interface PlanetConfig {
         hydrology: {
             tectonic_activity: number;
             ocean: number;
+            topographic_variation?: number; // Optional: computed from tectonic_activity and gravity if not provided
         };
     };
 }

@@ -108,7 +108,7 @@ export default function Star({ orbitalDistance }: { orbitalDistance: number }) {
     });
   
     return (
-      <group position={[4 * distanceFactor, 3 * distanceFactor, -5 * distanceFactor]}>
+      <group position={[2 * distanceFactor, 2 * distanceFactor, 8 * distanceFactor]}>
         {/* Enhanced lighting */}
         <pointLight intensity={intensity * 3.5} distance={25} color={"#fff5c0"} /> 
         <pointLight intensity={intensity * 1.5} distance={15} color={"#ffd080"} />

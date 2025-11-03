@@ -20,9 +20,9 @@ export default function PlanetCanvas({
     const [markerPosition, setMarkerPosition] = useState<[number, number, number] | undefined>(undefined);
 
     const sunPosition = [
-        4 * Math.max(0.5, orbitalDist), 
-        3 * Math.max(0.5, orbitalDist), 
-        -5 * Math.max(0.5, orbitalDist)
+        2 * Math.max(0.5, orbitalDist), 
+        2 * Math.max(0.5, orbitalDist), 
+        8 * Math.max(0.5, orbitalDist)
     ] as [number, number, number];
 
     const handlePlanetClick = (info: PlanetClickResult) => {
