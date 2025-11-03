@@ -33,7 +33,7 @@ export default function Planet({
     const [displacementMap, setDisplacementMap] = useState<THREE.CanvasTexture | null>(null); 
     const heightFieldRef = useRef<Float32Array | null>(null);
     const displacementFieldRef = useRef<Float32Array | null>(null);
-    const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE, landRange: 0.5, oceanRange: 0.1 });
+    const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE });
   
     // === Constants for 3D Relief ===
     // Max displacement scale relative to the radius (1.0). Controls mountain height.
@@ -253,7 +253,7 @@ export default function Planet({
       setDisplacementMap(dispTex);
       heightFieldRef.current = heightMap;
       displacementFieldRef.current = displacementField;
-      sampleMetaRef.current = { seaLevel, size, landRange: 0.5 * TERRAIN_CONTRAST, oceanRange: 0.1 };
+      sampleMetaRef.current = { seaLevel, size };
 
     }, [oceanFraction, tectonic, DISPLACEMENT_SCALE]); 
   
@@ -333,9 +333,8 @@ export default function Planet({
       (event: ThreeEvent<PointerEvent>) => {
         if (!onPlanetClick) return;
         const field = heightFieldRef.current;
-        const displacementField = displacementFieldRef.current;
-        const { seaLevel, size, landRange, oceanRange } = sampleMetaRef.current;
-        if (!displacementField) return;
+        const { seaLevel, size } = sampleMetaRef.current;
+        if (!field) return;
         event.stopPropagation();
 
         const mesh = planetRef.current;
@@ -368,47 +367,31 @@ export default function Planet({
           return THREE.MathUtils.lerp(top, bottom, ty);
         };
 
-        const displacementValue = sampleField(displacementField);
-        if (!Number.isFinite(displacementValue)) return;
+        // Use the actual height field to determine ocean vs land
+        const heightValue = sampleField(field);
+        if (!Number.isFinite(heightValue)) return;
 
-        const displacementBase = 0.5;
-        const landRangeSafe = Math.max(landRange, 1e-5);
-        const oceanRangeSafe = Math.max(oceanRange, 1e-5);
-
-        let landRelative = 0;
-        let oceanRelative = 0;
-        if (displacementValue >= displacementBase) {
-          landRelative = THREE.MathUtils.clamp((displacementValue - displacementBase) / landRangeSafe, 0, 1);
+        // Determine if this is ocean or land based on the height relative to sea level
+        const isOcean = heightValue <= seaLevel;
+        
+        let elevationKm: number;
+        let relativeToSeaLevel: number;
+        
+        if (isOcean) {
+          // Ocean: calculate depth below sea level
+          const depthNormalized = (seaLevel - heightValue) / seaLevel;
+          relativeToSeaLevel = -depthNormalized;
+          elevationKm = -depthNormalized * MAX_OCEAN_DEPTH_KM * planetSize;
         } else {
-          oceanRelative = THREE.MathUtils.clamp((displacementBase - displacementValue) / oceanRangeSafe, 0, 1);
+          // Land: calculate elevation above sea level
+          const elevNormalized = (heightValue - seaLevel) / (1 - seaLevel);
+          relativeToSeaLevel = elevNormalized;
+          elevationKm = elevNormalized * MAX_LAND_ELEVATION_KM * planetSize;
         }
 
-        const isOcean = oceanRelative > landRelative;
-        if (isOcean) landRelative = 0;
-        else oceanRelative = 0;
-
-        let relativeToSeaLevel = isOcean ? -oceanRelative : landRelative;
         if (Math.abs(relativeToSeaLevel) < 1e-3) relativeToSeaLevel = 0;
-
-        const elevationKm = isOcean
-          ? -oceanRelative * MAX_OCEAN_DEPTH_KM * planetSize
-          : landRelative * MAX_LAND_ELEVATION_KM * planetSize;
-
-        let elevationNormalized = isOcean
-          ? THREE.MathUtils.clamp(seaLevel - oceanRelative * seaLevel, 0, 1)
-          : THREE.MathUtils.clamp(seaLevel + landRelative * (1 - seaLevel), 0, 1);
-
-        if (field) {
-          const heightSample = sampleField(field);
-          if (Number.isFinite(heightSample)) {
-            const epsilon = 1e-3;
-            if (isOcean && heightSample <= seaLevel + epsilon) {
-              elevationNormalized = heightSample;
-            } else if (!isOcean && heightSample >= seaLevel - epsilon) {
-              elevationNormalized = heightSample;
-            }
-          }
-        }
+        
+        const elevationNormalized = heightValue;
 
         const world = event.point.clone();
 
