@@ -339,13 +339,30 @@ export default function Planet({
 
         const mesh = planetRef.current;
         if (!mesh) return;
-        const localPoint = mesh.worldToLocal(event.point.clone());
-        const direction = localPoint.normalize();
-        const phi = Math.acos(THREE.MathUtils.clamp(direction.y, -1, 1));
-        let theta = Math.atan2(direction.z, direction.x);
-        if (theta < 0) theta += Math.PI * 2;
-        const v = THREE.MathUtils.clamp(phi / Math.PI, 0, 1);
-        const u = THREE.MathUtils.clamp(theta / (Math.PI * 2), 0, 1);
+        
+        // Use UV coordinates from the intersection if available (more accurate for displaced geometry)
+        let u: number, v: number;
+        if (event.uv) {
+          // UV coordinates are directly available from raycaster
+          u = event.uv.x;
+          v = event.uv.y;
+        } else {
+          // Fallback: calculate from the face normal instead of the intersection point
+          // This avoids issues with displacement mapping causing incorrect projections
+          const face = event.face;
+          if (!face) return;
+          
+          // Transform the face normal from world space to local space using the normal matrix
+          const worldNormal = face.normal.clone().normalize();
+          const normalMatrix = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+          const localNormal = worldNormal.applyMatrix3(normalMatrix).normalize();
+          
+          const phi = Math.acos(THREE.MathUtils.clamp(localNormal.y, -1, 1));
+          let theta = Math.atan2(localNormal.z, localNormal.x);
+          if (theta < 0) theta += Math.PI * 2;
+          v = THREE.MathUtils.clamp(phi / Math.PI, 0, 1);
+          u = THREE.MathUtils.clamp(theta / (Math.PI * 2), 0, 1);
+        }
 
         const maxIndex = size - 1;
         const xFloat = u * maxIndex;

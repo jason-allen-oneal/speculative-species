@@ -75,8 +75,10 @@ export default function PlanetView({config}: PlanetViewProps) {
                         </div>
                         <div className="text-gray-200">
                             {selectedPoint.isOcean ? "Depth" : "Elevation"}{" "}
-                            {selectedPoint.elevationKm >= 0 ? "+" : ""}
-                            {selectedPoint.elevationKm.toFixed(2)} km
+                            {selectedPoint.isOcean 
+                                ? Math.abs(selectedPoint.elevationKm).toFixed(2)
+                                : (selectedPoint.elevationKm >= 0 ? "+" : "") + selectedPoint.elevationKm.toFixed(2)
+                            } km
                         </div>
                         <div className="text-gray-400">
                             Normalized height {selectedPoint.elevationNormalized.toFixed(3)} · Relative&nbsp;
