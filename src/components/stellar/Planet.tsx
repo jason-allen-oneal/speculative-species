@@ -6,7 +6,9 @@ import { createNoise2D } from "@/lib/utils";
 
 const TEXTURE_SIZE = 2048; // Higher resolution for hyper-realism
 const SPHERE_DETAIL = 256; // High detail geometry (needs enough vertices for displacement)
-const MAX_LAND_ELEVATION_KM = 9; // Approximate extreme elevation for Earth-like worlds (Everest ~8.8km)
+// Maximum land elevation scales inversely with gravity (stronger gravity = lower max mountains)
+// Earth (1g) has max ~9km, Mars (0.38g) could have ~23.7km mountains
+const getMaxLandElevation = (gravity: number) => 9 / Math.max(0.1, gravity);
 const MAX_OCEAN_DEPTH_KM = 11; // Approximate extreme depth for Earth-like worlds
 const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
@@ -20,7 +22,6 @@ export default function Planet({
     cloudCover: _cloudCover,
     tectonic,
     planetSize,
-    topographicVariation,
     onPlanetClick,
     isPaused,
     markerPosition,
@@ -36,10 +37,21 @@ export default function Planet({
     const displacementFieldRef = useRef<Float32Array | null>(null);
     const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE });
   
+    // Physics: Maximum mountain height is inversely proportional to gravity
+    const gravity = Math.max(0.1, _gravity); // Clamp to prevent division by zero
+    const MAX_LAND_ELEVATION_KM = getMaxLandElevation(gravity);
+    
+    // Derive topographic variation from tectonic activity and gravity
+    // Higher tectonic activity = more variation, higher gravity = less variation (mountains can't be as tall)
+    // Base value normalized to Earth (tectonic=5, gravity=1.0 => ~0.3)
+    const baseTopographicVariation = THREE.MathUtils.clamp(tectonic / 16.67, 0, 1); // tectonic 5 => 0.3
+    const gravityFactor = Math.min(2.0, 1.0 / gravity); // Lower gravity allows more variation
+    const topographicVariation = THREE.MathUtils.clamp(baseTopographicVariation * gravityFactor, 0, 1);
+    
     // === Constants for 3D Relief ===
     // Topographic variation controls terrain roughness (0-1 scale, where 0.3 is Earth-like)
     // Higher values mean more dramatic height variations
-    const terrainRoughness = THREE.MathUtils.clamp(topographicVariation, 0, 1);
+    const terrainRoughness = topographicVariation;
     
     // Max displacement scale relative to the radius (1.0). Controls mountain height.
     const DISPLACEMENT_SCALE = 0.04 * planetSize * (0.5 + terrainRoughness); 
@@ -260,7 +272,7 @@ export default function Planet({
       displacementFieldRef.current = displacementField;
       sampleMetaRef.current = { seaLevel, size };
 
-    }, [oceanFraction, tectonic, topographicVariation, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
+    }, [oceanFraction, tectonic, gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
   
   
     // === AXIS LINE === (Keeping existing code)
@@ -429,7 +441,7 @@ export default function Planet({
           worldPosition: [world.x, world.y, world.z],
         });
       },
-      [onPlanetClick, planetSize]
+      [onPlanetClick, planetSize, MAX_LAND_ELEVATION_KM]
     );
   
     return (

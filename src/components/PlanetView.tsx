@@ -13,7 +13,6 @@ export default function PlanetView({config}: PlanetViewProps) {
     const [cloudCover, setCloudCover] = useState(config.params.atmosphere.cloud_cover);
     const [tectonic, setTectonic] = useState(config.params.hydrology.tectonic_activity);
     const [ocean, setOcean] = useState(config.params.hydrology.ocean);
-    const [topographicVariation, setTopographicVariation] = useState(config.params.hydrology.topographic_variation);
 
     // === Generated Planet Data ===
     const [selectedPoint, setSelectedPoint] = useState<PlanetClickResult | null>(null);
@@ -38,7 +37,6 @@ export default function PlanetView({config}: PlanetViewProps) {
                 cloudCover={cloudCover}
                 tectonic={tectonic}
                 planetSize={planetSize}
-                topographicVariation={topographicVariation}
                 setPlanetSize={setPlanetSize}
                 setGravity={setGravity}
                 setOcean={setOcean}
@@ -48,7 +46,6 @@ export default function PlanetView({config}: PlanetViewProps) {
                 setRotationPeriod={setRotationPeriod}
                 setCloudCover={setCloudCover}
                 setTectonic={setTectonic}
-                setTopographicVariation={setTopographicVariation}
                 onGenerate={handleGenerate}
             />
 
@@ -64,7 +61,6 @@ export default function PlanetView({config}: PlanetViewProps) {
                     cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
-                    topographicVariation={topographicVariation}
                     onPlanetClick={(info) => {
                         setSelectedPoint(info);
                         setIsPaused(true);

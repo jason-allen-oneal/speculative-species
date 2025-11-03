@@ -12,7 +12,6 @@ export default function ControlPanel({
   cloudCover,
   tectonic,
   planetSize,
-  topographicVariation,
   setGravity,
   setOcean,
   setAxialTilt,
@@ -22,7 +21,6 @@ export default function ControlPanel({
   setCloudCover,
   setTectonic,
   setPlanetSize,
-  setTopographicVariation,
   onGenerate,
 }: ControlPanelProps) {
   const [localValues, setLocalValues] = useState({
@@ -35,7 +33,6 @@ export default function ControlPanel({
     cloudCover,
     tectonic,
     planetSize,
-    topographicVariation,
   });
 
   const applyChanges = () => {
@@ -48,7 +45,6 @@ export default function ControlPanel({
     setCloudCover(localValues.cloudCover);
     setTectonic(localValues.tectonic);
     setPlanetSize(localValues.planetSize);
-    setTopographicVariation(localValues.topographicVariation);
     onGenerate(localValues);
   };
 
@@ -125,14 +121,6 @@ export default function ControlPanel({
           text: "Relative geological activity. Drives mountain building and volcanism; higher values mean rougher terrain and more active crust.",
         },
         {
-          id: "topographicVariation",
-          label: "Topographic Variation",
-          min: 0,
-          max: 1,
-          step: 0.05,
-          text: "Controls terrain roughness and height variation. Higher values create more dramatic mountains and valleys. Earth-like is around 0.3.",
-        },
-        {
           id: "planetSize",
           label: "Planet Radius (×Earth)",
           min: 0.3,
@@ -145,7 +133,7 @@ export default function ControlPanel({
           <label className={`flex flex-col items-center text-xs text-gray-200 whitespace-nowrap ${slider.disabled ? 'opacity-50' : ''}`}>
             <span>
               {slider.label}:{" "}
-              {slider.id === "ocean" || slider.id === "cloudCover" || slider.id === "topographicVariation"
+              {slider.id === "ocean" || slider.id === "cloudCover"
                 ? Math.round(localValues[slider.id as keyof typeof localValues] * 100) + "%"
                 : localValues[slider.id as keyof typeof localValues].toFixed(2)}
             </span>
