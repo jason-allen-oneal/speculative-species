@@ -9,7 +9,6 @@ export default function ControlPanel({
   pressure,
   orbitalDist,
   rotationPeriod,
-  cloudCover,
   tectonic,
   planetSize,
   setGravity,
@@ -18,7 +17,6 @@ export default function ControlPanel({
   setPressure,
   setOrbitalDist,
   setRotationPeriod,
-  setCloudCover,
   setTectonic,
   setPlanetSize,
   onGenerate,
@@ -30,7 +28,6 @@ export default function ControlPanel({
     pressure,
     orbitalDist,
     rotationPeriod,
-    cloudCover,
     tectonic,
     planetSize,
   });
@@ -42,7 +39,6 @@ export default function ControlPanel({
     setPressure(localValues.pressure);
     setOrbitalDist(localValues.orbitalDist);
     setRotationPeriod(localValues.rotationPeriod);
-    setCloudCover(localValues.cloudCover);
     setTectonic(localValues.tectonic);
     setPlanetSize(localValues.planetSize);
     onGenerate(localValues);
@@ -104,14 +100,6 @@ export default function ControlPanel({
           text: "Time taken for one full rotation. Shorter days spin the planet faster (stronger Coriolis effects and faster winds), longer days mean slower rotation and wider temperature swings.",
         },
         {
-          id: "cloudCover",
-          label: "Cloud Cover (%)",
-          min: 0,
-          max: 1,
-          step: 0.05,
-          text: "Proportion of the sky covered by clouds. High values brighten the planet (increased albedo) but cool the surface slightly.",
-        },
-        {
           id: "tectonic",
           label: "Tectonic Activity",
           min: 0,
@@ -132,7 +120,7 @@ export default function ControlPanel({
           <label className="flex flex-col items-center text-xs text-gray-200 whitespace-nowrap">
             <span>
               {slider.label}:{" "}
-              {slider.id === "oceanFraction" || slider.id === "cloudCover"
+              {slider.id === "ocean"
                 ? Math.round(localValues[slider.id as keyof typeof localValues] * 100) + "%"
                 : localValues[slider.id as keyof typeof localValues].toFixed(2)}
             </span>

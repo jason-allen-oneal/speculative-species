@@ -5,7 +5,6 @@ interface ControlPanelProps {
     pressure: number;
     orbitalDist: number;
     rotationPeriod: number;
-    cloudCover: number;
     tectonic: number;
     planetSize: number;
     setGravity: (n: number) => void;
@@ -14,7 +13,6 @@ interface ControlPanelProps {
     setPressure: (n: number) => void;
     setOrbitalDist: (n: number) => void;
     setRotationPeriod: (n: number) => void;
-    setCloudCover: (n: number) => void;
     setTectonic: (n: number) => void;
     setPlanetSize: (n: number) => void;
     onGenerate: (vals: Record<string, number>) => void;
@@ -33,7 +31,6 @@ interface PlanetConfig {
         };
         atmosphere: {
             surface_pressure: number;
-            cloud_cover: number;
         };
         hydrology: {
             tectonic_activity: number;
@@ -65,7 +62,6 @@ interface PlanetCanvasProps {
     pressure: number;
     orbitalDist: number;
     rotationPeriod: number;
-    cloudCover: number;
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
@@ -79,7 +75,6 @@ interface PlanetProps {
     pressure: number;
     orbitalDist: number;
     rotationPeriod: number;
-    cloudCover: number;
     tectonic: number;
     planetSize: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
