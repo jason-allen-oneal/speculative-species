@@ -451,14 +451,26 @@ export default function Planet({
         </mesh>
         {/* Marker at clicked position */}
         {markerPosition && (
-          <mesh position={markerPosition}>
-            <sphereGeometry args={[0.02 * planetSize, 16, 16]} />
-            <meshStandardMaterial 
-              color="#ff0000" 
-              emissive="#ff0000"
-              emissiveIntensity={0.8}
-            />
-          </mesh>
+          <group position={markerPosition}>
+            {/* Outer dark ring for contrast on light surfaces */}
+            <mesh>
+              <sphereGeometry args={[0.025 * planetSize, 16, 16]} />
+              <meshStandardMaterial 
+                color="#000000" 
+                emissive="#000000"
+                emissiveIntensity={1.0}
+              />
+            </mesh>
+            {/* Inner bright marker */}
+            <mesh>
+              <sphereGeometry args={[0.018 * planetSize, 16, 16]} />
+              <meshStandardMaterial 
+                color="#ffff00" 
+                emissive="#ffff00"
+                emissiveIntensity={1.2}
+              />
+            </mesh>
+          </group>
         )}
       </group>
     );
