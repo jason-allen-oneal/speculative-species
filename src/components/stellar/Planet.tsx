@@ -6,7 +6,9 @@ import { createNoise2D } from "@/lib/utils";
 
 const TEXTURE_SIZE = 2048; // Higher resolution for hyper-realism
 const SPHERE_DETAIL = 256; // High detail geometry (needs enough vertices for displacement)
-const EARTH_RADIUS_KM = 6371; // Approximate Earth radius used for elevation conversion
+const MAX_LAND_ELEVATION_KM = 10; // Approximate extreme elevation for Earth-like worlds
+const MAX_OCEAN_DEPTH_KM = 11; // Approximate extreme depth for Earth-like worlds
+const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
 export default function Planet({
     gravity,
@@ -20,16 +22,19 @@ export default function Planet({
     planetSize,
     onPlanetClick,
 }: PlanetProps) {
-    const planetRef = useRef(null);
-    const tiltGroupRef = useRef(null);
-    const axisRef = useRef(null);
+    const planetRef = useRef<THREE.Mesh | null>(null);
+    const tiltGroupRef = useRef<THREE.Group | null>(null);
+    const axisRef = useRef<THREE.Line | null>(null);
     const { camera } = useThree(); 
     const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null); 
     const [normalMap, setNormalMap] = useState<THREE.CanvasTexture | null>(null); 
     const [displacementMap, setDisplacementMap] = useState<THREE.CanvasTexture | null>(null); 
-    const [rotationSpeed, setRotationSpeed] = useState(0.0015);
+    const [rotationSpeed, setRotationSpeed] = useState(
+      () => (2 * Math.PI / VISUAL_DAY_SECONDS) * (24 / rotationPeriod)
+    );
     const heightFieldRef = useRef<Float32Array | null>(null);
-    const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE });
+    const displacementFieldRef = useRef<Float32Array | null>(null);
+    const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE, landRange: 0.5, oceanRange: 0.1 });
   
     // === Constants for 3D Relief ===
     // Max displacement scale relative to the radius (1.0). Controls mountain height.
@@ -41,8 +46,7 @@ export default function Planet({
   
     // === Rotation speed update ===
     useEffect(() => {
-      const baseVisualDay = 10;
-      const newSpeed = (2 * Math.PI / baseVisualDay) * (24 / rotationPeriod);
+      const newSpeed = (2 * Math.PI / VISUAL_DAY_SECONDS) * (24 / rotationPeriod);
       setRotationSpeed(newSpeed);
     }, [rotationPeriod]);
   
@@ -84,6 +88,7 @@ export default function Planet({
       
       // Height map for normal and displacement generation
       const heightMap = new Float32Array(size * size);
+      const displacementField = new Float32Array(size * size);
   
   
       // Bias ocean fraction downward so coastlines sit lower and avoid carving artifacts
@@ -187,11 +192,11 @@ export default function Planet({
           // Clamp to ensure valid displacement values [0, 1]
           displacementValue = THREE.MathUtils.clamp(displacementValue, 0, 1);
           const dispVal255 = displacementValue * 255;
-          
           dispData[i] = dispVal255;
           dispData[i + 1] = dispVal255;
           dispData[i + 2] = dispVal255;
           dispData[i + 3] = 255;
+          displacementField[heightIndex] = displacementValue;
           // --------------------------------------------------
         }
       }
@@ -247,7 +252,8 @@ export default function Planet({
       dispTex.needsUpdate = true;
       setDisplacementMap(dispTex);
       heightFieldRef.current = heightMap;
-      sampleMetaRef.current = { seaLevel, size };
+      displacementFieldRef.current = displacementField;
+      sampleMetaRef.current = { seaLevel, size, landRange: 0.5 * TERRAIN_CONTRAST, oceanRange: 0.1 };
 
     }, [oceanFraction, tectonic, DISPLACEMENT_SCALE]); 
   
@@ -324,38 +330,83 @@ export default function Planet({
       (event: ThreeEvent<PointerEvent>) => {
         if (!onPlanetClick) return;
         const field = heightFieldRef.current;
-        const { seaLevel, size } = sampleMetaRef.current;
-        if (!field || !event.uv) return;
+        const displacementField = displacementFieldRef.current;
+        const { seaLevel, size, landRange, oceanRange } = sampleMetaRef.current;
+        if (!displacementField) return;
         event.stopPropagation();
 
-        const u = THREE.MathUtils.clamp(event.uv.x, 0, 1);
-        const v = THREE.MathUtils.clamp(event.uv.y, 0, 1);
-        const x = Math.min(size - 1, Math.max(0, Math.floor(u * size)));
-        const y = Math.min(size - 1, Math.max(0, Math.floor(v * size)));
-        const index = y * size + x;
-        const elevationNormalized = field[index];
-        if (!Number.isFinite(elevationNormalized)) return;
+        const mesh = planetRef.current;
+        if (!mesh) return;
+        const localPoint = mesh.worldToLocal(event.point.clone());
+        const direction = localPoint.normalize();
+        const phi = Math.acos(THREE.MathUtils.clamp(direction.y, -1, 1));
+        let theta = Math.atan2(direction.z, direction.x);
+        if (theta < 0) theta += Math.PI * 2;
+        const v = THREE.MathUtils.clamp(phi / Math.PI, 0, 1);
+        const u = THREE.MathUtils.clamp(theta / (Math.PI * 2), 0, 1);
 
-        const isOcean = elevationNormalized <= seaLevel;
-        const safeSea = Math.max(seaLevel, 1e-5);
-        const safeLand = Math.max(1 - seaLevel, 1e-5);
+        const maxIndex = size - 1;
+        const xFloat = u * maxIndex;
+        const yFloat = v * maxIndex;
+        const x0 = Math.floor(xFloat) % size;
+        const y0 = Math.floor(yFloat);
+        const x1 = (x0 + 1) % size;
+        const y1 = Math.min(maxIndex, y0 + 1);
+        const tx = xFloat - x0;
+        const ty = yFloat - y0;
+
+        const sampleField = (buffer: Float32Array) => {
+          const idx00 = y0 * size + x0;
+          const idx10 = y0 * size + x1;
+          const idx01 = y1 * size + x0;
+          const idx11 = y1 * size + x1;
+          const top = THREE.MathUtils.lerp(buffer[idx00], buffer[idx10], tx);
+          const bottom = THREE.MathUtils.lerp(buffer[idx01], buffer[idx11], tx);
+          return THREE.MathUtils.lerp(top, bottom, ty);
+        };
+
+        const displacementValue = sampleField(displacementField);
+        if (!Number.isFinite(displacementValue)) return;
+
         const displacementBase = 0.5;
-        let displacementValue = displacementBase;
+        const landRangeSafe = Math.max(landRange, 1e-5);
+        const oceanRangeSafe = Math.max(oceanRange, 1e-5);
 
-        if (isOcean) {
-          const depth = (seaLevel - elevationNormalized) / safeSea;
-          displacementValue = displacementBase - depth * 0.1;
+        let landRelative = 0;
+        let oceanRelative = 0;
+        if (displacementValue >= displacementBase) {
+          landRelative = THREE.MathUtils.clamp((displacementValue - displacementBase) / landRangeSafe, 0, 1);
         } else {
-          const heightRel = (elevationNormalized - seaLevel) / safeLand;
-          displacementValue = displacementBase + heightRel * 0.5 * TERRAIN_CONTRAST;
+          oceanRelative = THREE.MathUtils.clamp((displacementBase - displacementValue) / oceanRangeSafe, 0, 1);
         }
 
-        displacementValue = THREE.MathUtils.clamp(displacementValue, 0, 1);
-        const localDisplacement = displacementValue * DISPLACEMENT_SCALE + DISPLACEMENT_BIAS;
-        const elevationKm = localDisplacement * planetSize * EARTH_RADIUS_KM;
-        const relativeToSeaLevel = isOcean
-          ? -((seaLevel - elevationNormalized) / safeSea)
-          : (elevationNormalized - seaLevel) / safeLand;
+        const isOcean = oceanRelative > landRelative;
+        if (isOcean) landRelative = 0;
+        else oceanRelative = 0;
+
+        let relativeToSeaLevel = isOcean ? -oceanRelative : landRelative;
+        if (Math.abs(relativeToSeaLevel) < 1e-3) relativeToSeaLevel = 0;
+
+        const elevationKm = isOcean
+          ? -oceanRelative * MAX_OCEAN_DEPTH_KM * planetSize
+          : landRelative * MAX_LAND_ELEVATION_KM * planetSize;
+
+        let elevationNormalized = isOcean
+          ? THREE.MathUtils.clamp(seaLevel - oceanRelative * seaLevel, 0, 1)
+          : THREE.MathUtils.clamp(seaLevel + landRelative * (1 - seaLevel), 0, 1);
+
+        if (field) {
+          const heightSample = sampleField(field);
+          if (Number.isFinite(heightSample)) {
+            const epsilon = 1e-3;
+            if (isOcean && heightSample <= seaLevel + epsilon) {
+              elevationNormalized = heightSample;
+            } else if (!isOcean && heightSample >= seaLevel - epsilon) {
+              elevationNormalized = heightSample;
+            }
+          }
+        }
+
         const world = event.point.clone();
 
         onPlanetClick({
@@ -370,7 +421,7 @@ export default function Planet({
           worldPosition: [world.x, world.y, world.z],
         });
       },
-      [onPlanetClick, DISPLACEMENT_SCALE, DISPLACEMENT_BIAS, planetSize]
+      [onPlanetClick, planetSize]
     );
   
     return (
