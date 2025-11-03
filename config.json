@@ -1,0 +1,45 @@
+{
+    "params": {
+        "stellar": {
+            "star_type": "G2V",
+            "orbital_distance": 1.0,
+            "axial_tilt": 23.44,
+            "rotation_period_hours": 23.934
+        },
+        "physical": {
+            "radius_scale": 1.0,
+            "mass": 5.972e24,
+            "gravity": 1.0,
+            "magnetosphere": 1.0
+        },
+        "atmosphere": {
+            "surface_pressure": 1.0,
+            "composition": {
+                "N2": 0.78084,
+                "O2": 0.20946,
+                "Ar": 0.00934,
+                "CO2": 0.00042,
+                "CH4": 0.000002
+            },
+            "cloud_cover": 0.67,
+            "greenhouse_index": 1.0
+        },
+        "hydrology": {
+            "ocean": 0.71,
+            "ice": 0.03,
+            "tectonic_activity": 5,
+            "topographic_variation": 0.30
+        },
+        "climate": {
+            "mean_surface_temp_k": 288.0,
+            "wind_strength_mps": 7.0,
+            "precipitation_variability": 0.30,
+            "storm_frequency_index": 1.0
+        }
+    },
+    "metadata": {
+        "created": "2025-11-02T22:00:00Z",
+        "id": "world_earth",
+        "name": "Earth"
+    }
+}
