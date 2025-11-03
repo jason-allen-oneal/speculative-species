@@ -20,6 +20,7 @@ export default function Planet({
     cloudCover: _cloudCover,
     tectonic,
     planetSize,
+    topographicVariation,
     onPlanetClick,
     isPaused,
     markerPosition,
@@ -36,10 +37,14 @@ export default function Planet({
     const sampleMetaRef = useRef({ seaLevel: 0, size: TEXTURE_SIZE });
   
     // === Constants for 3D Relief ===
+    // Topographic variation controls terrain roughness (0-1 scale, where 0.3 is Earth-like)
+    // Higher values mean more dramatic height variations
+    const terrainRoughness = THREE.MathUtils.clamp(topographicVariation, 0, 1);
+    
     // Max displacement scale relative to the radius (1.0). Controls mountain height.
-    const DISPLACEMENT_SCALE = 0.04 * planetSize; 
+    const DISPLACEMENT_SCALE = 0.04 * planetSize * (0.5 + terrainRoughness); 
     // Terrain detail multiplier applied to the height map before displacement.
-    const TERRAIN_CONTRAST = 1.0; 
+    const TERRAIN_CONTRAST = 0.5 + terrainRoughness * 1.5; 
     // Bias is half of the scale, used to center the displacement around the sphere's radius.
     const DISPLACEMENT_BIAS = -DISPLACEMENT_SCALE * 0.5;
   
@@ -255,7 +260,7 @@ export default function Planet({
       displacementFieldRef.current = displacementField;
       sampleMetaRef.current = { seaLevel, size };
 
-    }, [oceanFraction, tectonic, DISPLACEMENT_SCALE]); 
+    }, [oceanFraction, tectonic, topographicVariation, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
   
   
     // === AXIS LINE === (Keeping existing code)

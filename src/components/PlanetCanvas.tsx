@@ -14,6 +14,7 @@ export default function PlanetCanvas({
     cloudCover,
     tectonic,
     planetSize,
+    topographicVariation,
     onPlanetClick,
     isPaused,
 }: PlanetCanvasProps) {
@@ -62,6 +63,7 @@ export default function PlanetCanvas({
                     cloudCover={cloudCover}
                     tectonic={tectonic}
                     planetSize={planetSize}
+                    topographicVariation={topographicVariation}
                     onPlanetClick={handlePlanetClick}
                     isPaused={isPaused}
                     markerPosition={markerPosition}

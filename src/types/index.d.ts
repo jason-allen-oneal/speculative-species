@@ -8,6 +8,7 @@ interface ControlPanelProps {
     cloudCover: number;
     tectonic: number;
     planetSize: number;
+    topographicVariation: number;
     setGravity: (n: number) => void;
     setOcean: (n: number) => void;
     setAxialTilt: (n: number) => void;
@@ -17,6 +18,7 @@ interface ControlPanelProps {
     setCloudCover: (n: number) => void;
     setTectonic: (n: number) => void;
     setPlanetSize: (n: number) => void;
+    setTopographicVariation: (n: number) => void;
     onGenerate: (vals: Record<string, number>) => void;
 }
 
@@ -38,6 +40,7 @@ interface PlanetConfig {
         hydrology: {
             tectonic_activity: number;
             ocean: number;
+            topographic_variation: number;
         };
     };
 }
@@ -68,6 +71,7 @@ interface PlanetCanvasProps {
     cloudCover: number;
     tectonic: number;
     planetSize: number;
+    topographicVariation: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
     isPaused?: boolean;
 }
@@ -82,6 +86,7 @@ interface PlanetProps {
     cloudCover: number;
     tectonic: number;
     planetSize: number;
+    topographicVariation: number;
     onPlanetClick?: (info: PlanetClickResult) => void;
     isPaused?: boolean;
     markerPosition?: [number, number, number];
