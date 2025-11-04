@@ -318,3 +318,18 @@ interface WindCoriolisResult {
     equatorialVelocity: number;
     qualitative: "weak" | "moderate" | "strong";
 }
+
+// Tectonic plate generation types
+interface Plate {
+    id: number;
+    type: "continental" | "oceanic";
+    velocity: THREE.Vector3;
+    age: number;
+}
+
+interface PlateMap {
+    plateIndex: Uint16Array;
+    plates: Plate[];
+    width: number;
+    height: number;
+}

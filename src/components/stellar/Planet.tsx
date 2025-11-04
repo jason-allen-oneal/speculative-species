@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import { createNoise2D } from "@/lib/utils";
+import { domainWarpedNoise, ridgedNoise } from "@/lib/utils";
+import { generatePlateMap, computeCoarseElevation } from "@/lib/tectonicGenerator";
 
 const TEXTURE_SIZE = 2048; // Higher resolution for hyper-realism
 const SPHERE_DETAIL = 256; // High detail geometry (needs enough vertices for displacement)
@@ -80,9 +81,22 @@ export default function Planet({
       return { oceanFraction: frac };
     }, [ocean]);
   
+    // === COARSE TECTONIC ELEVATION MAP ===
+    const coarseMap = useMemo(() => {
+      const mapSize = TEXTURE_SIZE;
+      // Derive plate count from tectonic slider: low activity → few plates, high activity → many plates
+      // Earth has ~7-8 major plates, tectonic=5 should give ~6-8 plates
+      const plateCount = Math.max(3, Math.min(15, Math.floor(2 + tectonic * 1.2)));
+      
+      // Use a seed based on tectonic and ocean values for reproducibility
+      const seed = Math.floor((tectonic * 1000 + oceanFraction * 10000) % 100000);
+      
+      const plateMap = generatePlateMap(seed, plateCount, mapSize, oceanFraction);
+      return computeCoarseElevation(plateMap, gravityFactor, oceanFraction);
+    }, [tectonic, oceanFraction, gravityFactor]);
+
     // === TEXTURE, NORMAL, & DISPLACEMENT MAP GENERATION ===
     useEffect(() => {
-      const noise2D = createNoise2D(); 
       const size = TEXTURE_SIZE;
       
       // Canvases
@@ -110,15 +124,16 @@ export default function Planet({
       // Height map for normal and displacement generation
       const heightMap = new Float32Array(size * size);
       const displacementField = new Float32Array(size * size);
-  
-  
+
       // Bias ocean fraction downward so coastlines sit lower and avoid carving artifacts
       const seaLevel = THREE.MathUtils.clamp(oceanFraction - 0.25, 0.02, 0.85);
-      const baseOctaves = Math.max(3, Math.min(8, Math.floor(3 + tectonic * 0.5)));
-      const persistence = 0.5 + tectonic * 0.015;
-      const lacunarity = 1.8 + tectonic * 0.02;
-  
-      // First Pass: Generate height map (and store heights)
+      
+      // Noise parameters scale with tectonic activity
+      const warpStrength = 0.3 + tectonic * 0.1; // More tectonic = more warping
+      const domainOctaves = 4;
+      const ridgedOctaves = 3;
+
+      // First Pass: Generate height map combining tectonic and noise
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
           // Spherical coordinates for seamless wrapping
@@ -132,21 +147,24 @@ export default function Planet({
           const ny = Math.cos(phi);
           const nz = Math.sin(phi) * Math.sin(theta);
   
-          // Generate seamless noise
-          let elev = 0;
-          let amp = 1, freq = 1;
-          for (let o = 0; o < baseOctaves; o++) {
-            elev += noise2D(nx * freq * 2, ny * freq * 2) * amp;
-            elev += noise2D(nz * freq * 2, ny * freq * 2) * amp * 0.5;
-            amp *= persistence;
-            freq *= lacunarity;
-          }
-          elev = THREE.MathUtils.clamp((elev + 1) / 2, 0, 1);
+          // Hybrid terrain generation:
+          // 1. Get coarse elevation from tectonic plates
+          const idx = y * size + x;
+          const coarse = coarseMap[idx];
+          
+          // 2. Sample domain-warped noise for fine detail
+          const domainNoise = (domainWarpedNoise(nx, ny, nz, warpStrength, domainOctaves) + 1) / 2;
+          
+          // 3. Sample ridged noise for mountain ridges
+          const ridges = ridgedNoise(nx, ny, nz, ridgedOctaves);
+          
+          // 4. Combine: coarse provides base, domain-warped adds variation, ridged adds mountains
+          let elev = 0.6 * coarse + 0.3 * domainNoise + 0.1 * ridges;
+          elev = THREE.MathUtils.clamp(elev, 0, 1);
 
           // smooth height distribution and store
           const e = Math.pow(elev, 1.25);
-          const heightIndex = y * size + x;
-          heightMap[heightIndex] = e;
+          heightMap[idx] = e;
   
           const diff = e - seaLevel;
           const blend = 1 / (1 + Math.exp(-diff / 0.018)); // Soft blending near shoreline
@@ -217,7 +235,7 @@ export default function Planet({
           dispData[i + 1] = dispVal255;
           dispData[i + 2] = dispVal255;
           dispData[i + 3] = 255;
-          displacementField[heightIndex] = displacementValue;
+          displacementField[idx] = displacementValue;
           // --------------------------------------------------
         }
       }
@@ -277,7 +295,7 @@ export default function Planet({
       displacementFieldRef.current = displacementField;
       sampleMetaRef.current = { seaLevel, size };
 
-    }, [oceanFraction, tectonic, _gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST]); 
+    }, [oceanFraction, tectonic, _gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST, coarseMap]); 
   
   
     // === AXIS LINE === (Keeping existing code)
@@ -324,20 +342,16 @@ export default function Planet({
         blending: THREE.AdditiveBlending,
       });
       
-      // @ts-expect-error - Line type doesn't match Group.add expected type
       axisRef.current = new THREE.Line(geometry, material);
-      // @ts-expect-error - tiltGroupRef.current is a Group but typed as Group | null
       tiltGroupRef.current.add(axisRef.current);
     }, []);
   
     // === Rotation & tilt ===
     useFrame((_, delta) => {
       if (!planetRef.current || !tiltGroupRef.current) return;
-      // @ts-expect-error - tiltGroupRef.current is a Group but typed as Group | null
       tiltGroupRef.current.rotation.z = axialTiltRad;
       // Only rotate if not paused
       if (!isPaused) {
-        // @ts-expect-error - planetRef.current is a Mesh but typed as Mesh | null
         planetRef.current.rotation.y += rotationSpeed * delta;
       }
     });
