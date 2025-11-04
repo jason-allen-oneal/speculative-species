@@ -81,6 +81,27 @@ describe('tectonicGenerator', () => {
         expect(map1.plateIndex[i]).toBe(map2.plateIndex[i]);
       }
     });
+
+    it('should always create at least one continental plate (no land issue fix)', () => {
+      const mapSize = 128;
+
+      // Test extreme ocean fraction scenarios
+      const testCases = [
+        { oceanFraction: 0.95, plateCount: 8, seed: 12345 },
+        { oceanFraction: 0.90, plateCount: 3, seed: 54321 },
+        { oceanFraction: 1.0, plateCount: 5, seed: 99999 },
+        { oceanFraction: 0.85, plateCount: 4, seed: 11111 },
+      ];
+
+      testCases.forEach(({ oceanFraction, plateCount, seed }) => {
+        const plateMap = generatePlateMap(seed, plateCount, mapSize, oceanFraction);
+
+        const continentalPlates = plateMap.plates.filter(p => p.type === 'continental');
+
+        // Should always have at least one continental plate
+        expect(continentalPlates.length).toBeGreaterThanOrEqual(1);
+      });
+    });
   });
 
   describe('computeCoarseElevation', () => {
