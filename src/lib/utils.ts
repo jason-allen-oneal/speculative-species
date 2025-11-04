@@ -49,4 +49,99 @@ export function createNoise2D() {
       // Perlin noise typically returns values in [-0.707, 0.707], scaling for better contrast
       return result * 1.414;
     };
-  };
+  }
+
+/**
+ * Generate domain-warped noise by using one noise function to offset 
+ * the sampling coordinates of another noise function, with multiple octaves for fBm
+ * 
+ * @param nx X coordinate on unit sphere
+ * @param ny Y coordinate on unit sphere
+ * @param nz Z coordinate on unit sphere
+ * @param warpStrength How much to warp the sampling coordinates (scales with tectonic activity)
+ * @param octaves Number of noise octaves to combine (4-6 recommended)
+ * @returns Noise value in range approximately [-1, 1]
+ */
+export function domainWarpedNoise(
+  nx: number,
+  ny: number,
+  nz: number,
+  warpStrength: number,
+  octaves: number
+): number {
+  const noise2D = createNoise2D();
+  const warpNoise1 = createNoise2D();
+  const warpNoise2 = createNoise2D();
+
+  // Use noise to warp the input coordinates
+  const warpScale = 2.0;
+  const offsetX = warpNoise1(nx * warpScale, ny * warpScale) * warpStrength;
+  const offsetY = warpNoise2(nz * warpScale, ny * warpScale) * warpStrength;
+
+  // Sample the main noise at warped coordinates with fBm
+  let value = 0;
+  let amplitude = 1.0;
+  let frequency = 1.0;
+  const persistence = 0.5;
+  const lacunarity = 2.0;
+
+  for (let i = 0; i < octaves; i++) {
+    const sampleX = (nx + offsetX) * frequency;
+    const sampleY = (ny + offsetY) * frequency;
+    const sampleZ = (nz + offsetX * 0.5) * frequency;
+
+    // Sample noise using two projections for 3D-like effect
+    value += noise2D(sampleX, sampleY) * amplitude;
+    value += noise2D(sampleZ, sampleY) * amplitude * 0.5;
+
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+
+  // Normalize to approximately [-1, 1]
+  return value / (octaves * 0.75);
+}
+
+/**
+ * Generate ridged noise where abs(noise) creates sharp ridges
+ * Useful for mountain ranges and dramatic terrain features
+ * 
+ * @param nx X coordinate on unit sphere
+ * @param ny Y coordinate on unit sphere
+ * @param nz Z coordinate on unit sphere
+ * @param octaves Number of noise octaves to combine
+ * @returns Noise value in range approximately [0, 1] with sharp ridges
+ */
+export function ridgedNoise(
+  nx: number,
+  ny: number,
+  nz: number,
+  octaves: number
+): number {
+  const noise2D = createNoise2D();
+
+  let value = 0;
+  let amplitude = 1.0;
+  let frequency = 1.0;
+  const persistence = 0.5;
+  const lacunarity = 2.0;
+
+  for (let i = 0; i < octaves; i++) {
+    // Sample noise using two projections
+    let n = noise2D(nx * frequency * 2, ny * frequency * 2);
+    n += noise2D(nz * frequency * 2, ny * frequency * 2) * 0.5;
+    
+    // Ridged: take absolute value and invert to create peaks
+    n = 1.0 - Math.abs(n / 1.5);
+    
+    // Square to sharpen ridges
+    n = n * n;
+
+    value += n * amplitude;
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+
+  // Normalize to [0, 1]
+  return Math.max(0, Math.min(1, value / (octaves * 0.5)));
+}

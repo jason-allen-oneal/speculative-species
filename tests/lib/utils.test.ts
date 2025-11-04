@@ -1,4 +1,4 @@
-import { createNoise2D } from '@/lib/utils';
+import { createNoise2D, domainWarpedNoise, ridgedNoise } from '@/lib/utils';
 
 describe('createNoise2D', () => {
   describe('Basic Functionality', () => {
@@ -166,6 +166,165 @@ describe('createNoise2D', () => {
       
       expect(hasPositive).toBe(true);
       expect(hasNegative).toBe(true);
+    });
+  });
+});
+
+describe('domainWarpedNoise', () => {
+  describe('Basic Functionality', () => {
+    it('should return a finite number', () => {
+      const result = domainWarpedNoise(0.5, 0.3, 0.2, 0.5, 4);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+
+    it('should accept sphere coordinates', () => {
+      // Test on unit sphere coordinates
+      const theta = Math.PI / 4;
+      const phi = Math.PI / 3;
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.cos(phi);
+      const nz = Math.sin(phi) * Math.sin(theta);
+
+      const result = domainWarpedNoise(nx, ny, nz, 0.5, 4);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+  });
+
+  describe('Output Range', () => {
+    it('should return values roughly in [-1, 1] range', () => {
+      const samples: number[] = [];
+
+      for (let i = 0; i < 100; i++) {
+        const theta = (i / 100) * Math.PI * 2;
+        const phi = (i / 100) * Math.PI;
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
+
+        samples.push(domainWarpedNoise(nx, ny, nz, 0.5, 4));
+      }
+
+      const min = Math.min(...samples);
+      const max = Math.max(...samples);
+
+      // Should be roughly in range, with some tolerance
+      expect(min).toBeGreaterThan(-2);
+      expect(max).toBeLessThan(2);
+    });
+  });
+
+  describe('Warp Strength', () => {
+    it('should produce different results with different warp strengths', () => {
+      const nx = 0.5, ny = 0.3, nz = 0.2;
+
+      const noWarp = domainWarpedNoise(nx, ny, nz, 0, 4);
+      const weakWarp = domainWarpedNoise(nx, ny, nz, 0.2, 4);
+      const strongWarp = domainWarpedNoise(nx, ny, nz, 1.0, 4);
+
+      // Different warp strengths should produce different values
+      expect(Math.abs(noWarp - weakWarp)).toBeGreaterThan(0.01);
+      expect(Math.abs(weakWarp - strongWarp)).toBeGreaterThan(0.01);
+    });
+  });
+
+  describe('Octaves', () => {
+    it('should handle different octave counts', () => {
+      const nx = 0.5, ny = 0.3, nz = 0.2;
+      const warpStrength = 0.5;
+
+      const result2 = domainWarpedNoise(nx, ny, nz, warpStrength, 2);
+      const result4 = domainWarpedNoise(nx, ny, nz, warpStrength, 4);
+      const result8 = domainWarpedNoise(nx, ny, nz, warpStrength, 8);
+
+      expect(Number.isFinite(result2)).toBe(true);
+      expect(Number.isFinite(result4)).toBe(true);
+      expect(Number.isFinite(result8)).toBe(true);
+    });
+  });
+});
+
+describe('ridgedNoise', () => {
+  describe('Basic Functionality', () => {
+    it('should return a finite number', () => {
+      const result = ridgedNoise(0.5, 0.3, 0.2, 3);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+
+    it('should accept sphere coordinates', () => {
+      const theta = Math.PI / 4;
+      const phi = Math.PI / 3;
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.cos(phi);
+      const nz = Math.sin(phi) * Math.sin(theta);
+
+      const result = ridgedNoise(nx, ny, nz, 3);
+      expect(Number.isFinite(result)).toBe(true);
+    });
+  });
+
+  describe('Output Range', () => {
+    it('should return values in [0, 1] range', () => {
+      const samples: number[] = [];
+
+      for (let i = 0; i < 100; i++) {
+        const theta = (i / 100) * Math.PI * 2;
+        const phi = (i / 100) * Math.PI;
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
+
+        samples.push(ridgedNoise(nx, ny, nz, 3));
+      }
+
+      const min = Math.min(...samples);
+      const max = Math.max(...samples);
+
+      // Should be in [0, 1] range
+      expect(min).toBeGreaterThanOrEqual(0);
+      expect(max).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('Ridge Formation', () => {
+    it('should produce varied values across the sphere', () => {
+      const samples: number[] = [];
+
+      for (let i = 0; i < 50; i++) {
+        const theta = (i / 50) * Math.PI * 2;
+        const phi = (i / 50) * Math.PI;
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
+
+        samples.push(ridgedNoise(nx, ny, nz, 3));
+      }
+
+      const uniqueValues = new Set(samples.map(v => v.toFixed(2)));
+      
+      // Should have variation
+      expect(uniqueValues.size).toBeGreaterThan(10);
+    });
+  });
+
+  describe('Octaves', () => {
+    it('should handle different octave counts', () => {
+      const nx = 0.5, ny = 0.3, nz = 0.2;
+
+      const result2 = ridgedNoise(nx, ny, nz, 2);
+      const result4 = ridgedNoise(nx, ny, nz, 4);
+      const result6 = ridgedNoise(nx, ny, nz, 6);
+
+      expect(Number.isFinite(result2)).toBe(true);
+      expect(Number.isFinite(result4)).toBe(true);
+      expect(Number.isFinite(result6)).toBe(true);
+
+      // All should be in valid range
+      expect(result2).toBeGreaterThanOrEqual(0);
+      expect(result2).toBeLessThanOrEqual(1);
+      expect(result4).toBeGreaterThanOrEqual(0);
+      expect(result4).toBeLessThanOrEqual(1);
+      expect(result6).toBeGreaterThanOrEqual(0);
+      expect(result6).toBeLessThanOrEqual(1);
     });
   });
 });
