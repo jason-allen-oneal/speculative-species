@@ -15,6 +15,12 @@ const getMaxOceanDepth = (gravity: number) =>
   BASE_MAX_OCEAN_DEPTH_KM / Math.sqrt(Math.max(0.1, gravity));
 const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
+// Tectonic plate generation constants
+const MIN_PLATE_COUNT = 3; // Minimum number of tectonic plates
+const MAX_PLATE_COUNT = 15; // Maximum number of tectonic plates
+const BASE_PLATE_COUNT = 2; // Base offset for plate count calculation
+const TECTONIC_PLATE_MULTIPLIER = 1.2; // Scales tectonic slider to plate count
+
 export default function Planet({
     gravity: _gravity,
     ocean,
@@ -86,7 +92,7 @@ export default function Planet({
       const mapSize = TEXTURE_SIZE;
       // Derive plate count from tectonic slider: low activity → few plates, high activity → many plates
       // Earth has ~7-8 major plates, tectonic=5 should give ~6-8 plates
-      const plateCount = Math.max(3, Math.min(15, Math.floor(2 + tectonic * 1.2)));
+      const plateCount = Math.max(MIN_PLATE_COUNT, Math.min(MAX_PLATE_COUNT, Math.floor(BASE_PLATE_COUNT + tectonic * TECTONIC_PLATE_MULTIPLIER)));
       
       // Use a seed based on tectonic and ocean values for reproducibility
       const seed = Math.floor((tectonic * 1000 + oceanFraction * 10000) % 100000);

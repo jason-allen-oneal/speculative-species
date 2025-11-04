@@ -26,13 +26,18 @@ export interface PlateMap {
 class SeededRandom {
   private seed: number;
 
+  // Linear congruential generator constants (Park and Miller)
+  private static readonly MULTIPLIER = 9301;
+  private static readonly INCREMENT = 49297;
+  private static readonly MODULUS = 233280;
+
   constructor(seed: number) {
     this.seed = seed;
   }
 
   next(): number {
-    this.seed = (this.seed * 9301 + 49297) % 233280;
-    return this.seed / 233280;
+    this.seed = (this.seed * SeededRandom.MULTIPLIER + SeededRandom.INCREMENT) % SeededRandom.MODULUS;
+    return this.seed / SeededRandom.MODULUS;
   }
 }
 
@@ -93,7 +98,8 @@ export function generatePlateMap(
       let minDist = Infinity;
       let closestPlate = 0;
 
-      // Find closest seed point by spherical distance
+      // Find closest seed point by Euclidean distance (faster than spherical distance)
+      // Since we only need relative distances for Voronoi assignment, squared distance is sufficient
       for (const seed of seedPoints) {
         const sTheta = seed.u * Math.PI * 2;
         const sPhi = seed.v * Math.PI;
@@ -101,12 +107,14 @@ export function generatePlateMap(
         const sy = Math.cos(sPhi);
         const sz = Math.sin(sPhi) * Math.sin(sTheta);
 
-        // Spherical distance (dot product gives cosine of angle)
-        const dot = px * sx + py * sy + pz * sz;
-        const dist = Math.acos(Math.max(-1, Math.min(1, dot)));
+        // Squared Euclidean distance (avoids expensive acos)
+        const dx = px - sx;
+        const dy = py - sy;
+        const dz = pz - sz;
+        const distSq = dx * dx + dy * dy + dz * dz;
 
-        if (dist < minDist) {
-          minDist = dist;
+        if (distSq < minDist) {
+          minDist = distSq;
           closestPlate = seed.id;
         }
       }
