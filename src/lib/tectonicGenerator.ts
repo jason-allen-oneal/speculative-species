@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+// Constants for elevation processing
+const SAMPLE_DIVISOR = 4; // Divisor for sampling interval calculation - gives ~16k samples for 2048x2048
+const MIN_OCEAN_THRESHOLD = 0.001; // Minimum threshold to prevent division by zero
+
 /**
  * Represents a tectonic plate with its properties
  */
@@ -312,7 +316,7 @@ export function computeCoarseElevation(
   // Find the elevation threshold that gives us the right ocean coverage
   // Use sampling approach to reduce memory usage - we don't need to sort all 4M+ pixels
   // Sample every Nth pixel for threshold calculation (gives us ~16k samples for 2048x2048)
-  const sampleInterval = Math.max(1, Math.floor(Math.sqrt(elevation.length) / 4));
+  const sampleInterval = Math.max(1, Math.floor(Math.sqrt(elevation.length) / SAMPLE_DIVISOR));
   const samples: number[] = [];
   for (let i = 0; i < elevation.length; i += sampleInterval) {
     if (Number.isFinite(elevation[i])) {
@@ -334,7 +338,7 @@ export function computeCoarseElevation(
 
   // Remap so that oceanThreshold becomes approximately 0.4 (sea level in the noise)
   // Guard against division by zero and ensure valid threshold
-  const safeOceanThreshold = Math.max(0.001, oceanThreshold);
+  const safeOceanThreshold = Math.max(MIN_OCEAN_THRESHOLD, oceanThreshold);
   
   for (let i = 0; i < elevation.length; i++) {
     if (elevation[i] < safeOceanThreshold) {
@@ -342,7 +346,7 @@ export function computeCoarseElevation(
     } else {
       // Avoid division by zero when oceanThreshold is 1.0 or very close
       const range = 1 - safeOceanThreshold;
-      if (range > 0.001) {
+      if (range > MIN_OCEAN_THRESHOLD) {
         elevation[i] = 0.4 + (elevation[i] - safeOceanThreshold) / range * 0.6;
       } else {
         // All land is at sea level when oceanFraction is 1.0
