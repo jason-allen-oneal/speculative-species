@@ -193,5 +193,24 @@ describe('tectonicGenerator', () => {
       // Should have many different elevation values
       expect(uniqueValues.size).toBeGreaterThan(20);
     });
+
+    it('should handle oceanFraction = 1.0 without producing NaNs', () => {
+      const plateCount = 3;
+      const mapSize = 32;
+      const oceanFraction = 1.0;
+      const seed = 42;
+
+      const plateMap = generatePlateMap(seed, plateCount, mapSize, oceanFraction);
+      const elevation = computeCoarseElevation(plateMap, 1.0, oceanFraction);
+
+      expect(elevation.length).toBe(mapSize * mapSize);
+
+      // Verify all values are finite (not NaN or Infinity)
+      for (let i = 0; i < elevation.length; i++) {
+        expect(Number.isFinite(elevation[i])).toBe(true);
+        expect(elevation[i]).toBeGreaterThanOrEqual(0);
+        expect(elevation[i]).toBeLessThanOrEqual(1);
+      }
+    });
   });
 });
