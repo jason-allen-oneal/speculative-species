@@ -298,7 +298,14 @@ export function computeCoarseElevation(
     if (elevation[i] < oceanThreshold) {
       elevation[i] = elevation[i] / oceanThreshold * 0.4;
     } else {
-      elevation[i] = 0.4 + (elevation[i] - oceanThreshold) / (1 - oceanThreshold) * 0.6;
+      // Avoid division by zero when oceanThreshold is 1.0 or very close
+      const range = 1 - oceanThreshold;
+      if (range > 0.001) {
+        elevation[i] = 0.4 + (elevation[i] - oceanThreshold) / range * 0.6;
+      } else {
+        // All land is at sea level when oceanFraction is 1.0
+        elevation[i] = 0.4;
+      }
     }
   }
 
