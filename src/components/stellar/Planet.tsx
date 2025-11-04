@@ -56,7 +56,7 @@ export default function Planet({
     // Base value normalized to Earth (tectonic=5, gravity=1.0 => ~0.3)
     // Normalization: Earth's tectonic value of 5 divided by 16.67 yields 0.3 baseline variation
     const TECTONIC_NORMALIZATION_FACTOR = 16.67;
-    const baseTopographicVariation = THREE.MathUtils.clamp(tectonic / TECTONIC_NORMALIZATION_FACTOR, 0, 1);
+    const baseTopographicVariation = useMemo(() => THREE.MathUtils.clamp(tectonic / TECTONIC_NORMALIZATION_FACTOR, 0, 1), [tectonic]);
     const gravityFactor = useMemo(() => Math.min(2.0, 1.0 / gravity), [gravity]); // Lower gravity allows more variation
     const topographicVariation = useMemo(() => THREE.MathUtils.clamp(baseTopographicVariation * gravityFactor, 0, 1), [baseTopographicVariation, gravityFactor]);
     
