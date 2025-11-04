@@ -124,7 +124,9 @@ export function generatePlateMap(
   }
 
   // Step 3: Create plate objects with types and velocities
-  const numOceanic = Math.round(plateCount * oceanFraction);
+  // Ensure at least one continental plate exists to prevent "no land" issue
+  // Even highly oceanic planets should have some land mass
+  const numOceanic = Math.min(plateCount - 1, Math.round(plateCount * oceanFraction));
   
   for (let i = 0; i < plateCount; i++) {
     // First numOceanic plates are oceanic, rest are continental
