@@ -9,7 +9,6 @@
         "physical": {
             "radius_scale": 1.0,
             "mass": 5.972e24,
-            "gravity": 1.0,
             "magnetosphere": 1.0
         },
         "atmosphere": {

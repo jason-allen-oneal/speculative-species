@@ -28,7 +28,6 @@ describe('loadConfig', () => {
           physical: {
             radius_scale: 1.0,
             mass: 5.972e24,
-            gravity: 1.0,
             magnetosphere: 1.0,
           },
           atmosphere: {
@@ -70,7 +69,7 @@ describe('loadConfig', () => {
       const mockConfig = {
         params: {
           physical: {
-            gravity: 1.5,
+            radius_scale: 0.75,
             mass: 1.2e24,
           },
         },
@@ -80,7 +79,7 @@ describe('loadConfig', () => {
 
       const result = await loadConfig();
 
-      expect(result.params.physical.gravity).toBe(1.5);
+      expect(result.params.physical.radius_scale).toBe(0.75);
       expect(result.params.physical.mass).toBe(1.2e24);
     });
 
@@ -131,7 +130,7 @@ describe('loadConfig', () => {
     });
 
     it('should throw error on malformed JSON with missing braces', async () => {
-      mockReadFile.mockResolvedValue('{"params": {"physical": {"gravity": 1.0}');
+      mockReadFile.mockResolvedValue('{"params": {"physical": {"radius_scale": 1.0}');
 
       await expect(loadConfig()).rejects.toThrow();
     });

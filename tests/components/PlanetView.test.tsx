@@ -1,26 +1,40 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import PlanetView from '@/components/PlanetView';
+import { render, screen, fireEvent } from "@testing-library/react";
+import PlanetView from "@/components/PlanetView";
+import type { ComponentProps, ReactNode } from "react";
+import type ControlPanel from "@/components/ControlPanel";
+import type PlanetCanvas from "@/components/PlanetCanvas";
+import type PhysicsInfo from "@/components/PhysicsInfo";
+
+const mockControlPanel = jest.fn();
+const mockPlanetCanvas = jest.fn();
+const mockPhysicsInfo = jest.fn();
+
+type ControlPanelProps = ComponentProps<typeof ControlPanel>;
+type PlanetCanvasProps = ComponentProps<typeof PlanetCanvas>;
+type PhysicsInfoProps = ComponentProps<typeof PhysicsInfo>;
 
 // Mock the Canvas component from @react-three/fiber since it requires WebGL
-jest.mock('@react-three/fiber', () => ({
-  Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="mock-canvas">{children}</div>,
+jest.mock("@react-three/fiber", () => ({
+  Canvas: ({ children }: { children: ReactNode }) => <div data-testid="mock-canvas">{children}</div>,
   useFrame: jest.fn(),
   useThree: jest.fn(() => ({ camera: { position: { set: jest.fn() } } })),
 }));
 
 // Mock the child components
-jest.mock('@/components/ControlPanel', () => {
-  return function MockControlPanel(props: any) {
+jest.mock("@/components/ControlPanel", () => {
+  return function MockControlPanel(props: ControlPanelProps) {
+    mockControlPanel(props);
     return (
       <div data-testid="control-panel">
-        <button onClick={() => props.onGenerate({})}>Generate</button>
+        <button onClick={() => props.onGenerate({} as Record<string, number>)}>Generate</button>
       </div>
     );
   };
 });
 
-jest.mock('@/components/PlanetCanvas', () => {
-  return function MockPlanetCanvas(props: any) {
+jest.mock("@/components/PlanetCanvas", () => {
+  return function MockPlanetCanvas(props: PlanetCanvasProps) {
+    mockPlanetCanvas(props);
     return (
       <div data-testid="planet-canvas">
         <button 
@@ -34,12 +48,20 @@ jest.mock('@/components/PlanetCanvas', () => {
             isOcean: false,
             uv: [0.5, 0.5],
             worldPosition: [1, 0, 0],
+            localPosition: [1, 0, 0],
           })}
         >
           Click Planet
         </button>
       </div>
     );
+  };
+});
+
+jest.mock("@/components/PhysicsInfo", () => {
+  return function MockPhysicsInfo(props: PhysicsInfoProps) {
+    mockPhysicsInfo(props);
+    return <div data-testid="physics-info" />;
   };
 });
 
@@ -55,7 +77,6 @@ describe('PlanetView Component', () => {
       physical: {
         radius_scale: 1.0,
         mass: 5.972e24,
-        gravity: 1.0,
         magnetosphere: 1.0,
       },
       atmosphere: {
@@ -85,11 +106,19 @@ describe('PlanetView Component', () => {
     },
   };
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockControlPanel.mockClear();
+    mockPlanetCanvas.mockClear();
+    mockPhysicsInfo.mockClear();
+  });
+
   describe('Initial Rendering', () => {
     it('should render without crashing', () => {
       render(<PlanetView config={mockConfig} />);
       expect(screen.getByTestId('control-panel')).toBeInTheDocument();
       expect(screen.getByTestId('planet-canvas')).toBeInTheDocument();
+      expect(screen.getByTestId('physics-info')).toBeInTheDocument();
     });
 
     it('should render main element with correct classes', () => {
@@ -109,11 +138,31 @@ describe('PlanetView Component', () => {
   });
 
   describe('State Initialization from Config', () => {
-    it('should initialize state with gravity from config', () => {
-      const { container } = render(<PlanetView config={mockConfig} />);
-      
-      // Component should use config values
-      expect(container).toBeInTheDocument();
+    it("derives surface gravity from mass and radius", () => {
+      render(<PlanetView config={mockConfig} />);
+
+      const controlProps = mockControlPanel.mock.calls[0][0];
+      expect(controlProps.ocean).toBeCloseTo(0.71, 2);
+      expect(controlProps.axialTilt).toBeCloseTo(23.44, 2);
+
+      const planetProps = mockPlanetCanvas.mock.calls[0][0];
+      expect(planetProps.gravity).toBeCloseTo(1.0, 2);
+
+      const physicsProps = mockPhysicsInfo.mock.calls[0][0];
+      expect(physicsProps.escapeVelocity.kilometersPerSecond).toBeCloseTo(11.19, 2);
+      expect(physicsProps.retention.thresholdVelocity / 1000).toBeCloseTo(1.86, 2);
+      expect(physicsProps.temperature.equilibriumTemperature).toBeCloseTo(255, 0);
+      expect(physicsProps.temperature.surfaceTemperature).toBeCloseTo(288, 0);
+      expect(physicsProps.temperature.greenhouseDelta).toBeCloseTo(33, 0);
+      expect(physicsProps.pressure.expectedPressureAtm).toBeCloseTo(1.0, 2);
+      expect(physicsProps.pressure.status).toBe("nominal");
+      expect(physicsProps.hillSphere.radiusKilometers).toBeGreaterThan(1_300_000);
+      expect(physicsProps.hillSphere.radiusKilometers).toBeLessThan(1_600_000);
+      expect(physicsProps.orbital.periodDays).toBeCloseTo(365.25, 1);
+      expect(physicsProps.cloudSuggestion.suggestedFraction).toBeGreaterThan(0.3);
+      expect(physicsProps.wind.qualitative).toBe("moderate");
+      expect(physicsProps.retention.warnings).toHaveLength(0);
+      expect(physicsProps.retention.gases.length).toBeGreaterThan(0);
     });
 
     it('should initialize state with orbital distance from config', () => {
@@ -281,20 +330,27 @@ describe('PlanetView Component', () => {
   });
 
   describe('Config Variations', () => {
-    it('should handle different gravity values', () => {
-      const highGravityConfig = {
+    it("recalculates gravity when radius scale changes", () => {
+      const largeRadiusConfig = {
         ...mockConfig,
         params: {
           ...mockConfig.params,
           physical: {
             ...mockConfig.params.physical,
-            gravity: 2.5,
+            radius_scale: 2.0,
           },
         },
       };
       
-      render(<PlanetView config={highGravityConfig} />);
+      render(<PlanetView config={largeRadiusConfig} />);
       expect(screen.getByTestId('planet-canvas')).toBeInTheDocument();
+      const physicsProps = mockPhysicsInfo.mock.calls[0][0];
+      expect(physicsProps.escapeVelocity.kilometersPerSecond).toBeCloseTo(7.91, 2);
+      expect(physicsProps.temperature.equilibriumTemperature).toBeLessThan(255);
+      expect(physicsProps.pressure.status).toBe("nominal");
+      expect(physicsProps.pressure.warnings[0]).toMatch(/Scale height/i);
+      expect(physicsProps.hillSphere.radiusKilometers).toBeGreaterThan(1_000_000);
+      expect(physicsProps.cloudSuggestion.suggestedFraction).toBeGreaterThan(0.3);
     });
 
     it('should handle different ocean coverage values', () => {
@@ -340,8 +396,8 @@ describe('PlanetView Component', () => {
             axial_tilt: 0,
           },
           physical: {
-            gravity: 1.0,
             radius_scale: 1.0,
+            mass: 5.972e24,
           },
           atmosphere: {
             surface_pressure: 1.0,

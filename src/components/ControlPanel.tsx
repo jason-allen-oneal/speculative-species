@@ -3,19 +3,15 @@ import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
 
 export default function ControlPanel({
-  gravity,
   ocean,
   axialTilt,
-  pressure,
   orbitalDist,
   rotationPeriod,
   cloudCover,
   tectonic,
   planetSize,
-  setGravity,
   setOcean,
   setAxialTilt,
-  setPressure,
   setOrbitalDist,
   setRotationPeriod,
   setCloudCover,
@@ -24,10 +20,8 @@ export default function ControlPanel({
   onGenerate,
 }: ControlPanelProps) {
   const [localValues, setLocalValues] = useState({
-    gravity,
     ocean,
     axialTilt,
-    pressure,
     orbitalDist,
     rotationPeriod,
     cloudCover,
@@ -36,10 +30,8 @@ export default function ControlPanel({
   });
 
   const applyChanges = () => {
-    setGravity(localValues.gravity);
     setOcean(localValues.ocean);
     setAxialTilt(localValues.axialTilt);
-    setPressure(localValues.pressure);
     setOrbitalDist(localValues.orbitalDist);
     setRotationPeriod(localValues.rotationPeriod);
     setCloudCover(localValues.cloudCover);
@@ -56,14 +48,6 @@ export default function ControlPanel({
     <div className="w-full flex flex-wrap items-center justify-center gap-3 p-3 bg-gray-900/80 backdrop-blur-md border-b border-gray-700">
       {[
         {
-          id: "gravity",
-          label: "Gravity (g)",
-          min: 0.1,
-          max: 3,
-          step: 0.05,
-          text: "Determines surface weight and atmospheric retention. Higher gravity compresses the atmosphere, lowers mountain height, and increases surface pressure.",
-        },
-        {
           id: "ocean",
           label: "Ocean Coverage",
           min: 0,
@@ -78,14 +62,6 @@ export default function ControlPanel({
           max: 45,
           step: 0.5,
           text: "Angle between the rotation axis and orbital plane. Controls seasonal variation—higher tilt means harsher seasons and stronger polar contrast.",
-        },
-        {
-          id: "pressure",
-          label: "Atmospheric Pressure (atm)",
-          min: 0.1,
-          max: 10,
-          step: 0.1,
-          text: "Surface air pressure in Earth atmospheres. Denser atmospheres trap heat (greenhouse effect), thinner ones lose it quickly.",
         },
         {
           id: "orbitalDist",

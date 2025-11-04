@@ -9,7 +9,9 @@ const SPHERE_DETAIL = 256; // High detail geometry (needs enough vertices for di
 // Maximum land elevation scales inversely with gravity (stronger gravity = lower max mountains)
 // Earth (1g) has max ~9km, Mars (0.38g) could have ~23.7km mountains
 const getMaxLandElevation = (gravity: number) => 9 / Math.max(0.1, gravity);
-const MAX_OCEAN_DEPTH_KM = 11; // Approximate extreme depth for Earth-like worlds
+const BASE_MAX_OCEAN_DEPTH_KM = 11; // Earth's deepest trenches ~11 km
+const getMaxOceanDepth = (gravity: number) =>
+  BASE_MAX_OCEAN_DEPTH_KM / Math.sqrt(Math.max(0.1, gravity));
 const VISUAL_DAY_SECONDS = 60; // Seconds it takes for a 24h planet to complete a turn in view
 
 export default function Planet({
@@ -39,7 +41,8 @@ export default function Planet({
   
     // Physics: Maximum mountain height is inversely proportional to gravity
     const gravity = Math.max(0.1, _gravity); // Clamp to prevent division by zero
-    const MAX_LAND_ELEVATION_KM = getMaxLandElevation(gravity);
+  const MAX_LAND_ELEVATION_KM = getMaxLandElevation(gravity);
+  const MAX_OCEAN_DEPTH_KM = getMaxOceanDepth(gravity);
     
     // Derive topographic variation from tectonic activity and gravity
     // Higher tectonic activity = more variation, higher gravity = less variation (mountains can't be as tall)
@@ -429,7 +432,10 @@ export default function Planet({
         
         const elevationNormalized = heightValue;
 
-        const world = event.point.clone();
+        const worldPosition = event.point.clone();
+        const localPosition = worldPosition.clone();
+        mesh.updateMatrixWorld();
+        mesh.worldToLocal(localPosition);
 
         onPlanetClick({
           latitude: 90 - v * 180,
@@ -440,10 +446,11 @@ export default function Planet({
           relativeToSeaLevel,
           isOcean,
           uv: [u, v],
-          worldPosition: [world.x, world.y, world.z],
+          worldPosition: [worldPosition.x, worldPosition.y, worldPosition.z],
+          localPosition: [localPosition.x, localPosition.y, localPosition.z],
         });
       },
-      [onPlanetClick, planetSize, gravity, MAX_LAND_ELEVATION_KM]
+      [onPlanetClick, planetSize, MAX_LAND_ELEVATION_KM, MAX_OCEAN_DEPTH_KM]
     );
   
     return (
@@ -467,30 +474,30 @@ export default function Planet({
               envMapIntensity={0.5} 
             />
           )}
+          {/* Marker at clicked position */}
+          {markerPosition && (
+            <group position={markerPosition}>
+              {/* Outer ring for contrast */}
+              <mesh>
+                <sphereGeometry args={[0.025, 16, 16]} />
+                <meshBasicMaterial 
+                  color="#000000"
+                  transparent={true}
+                  opacity={0.8}
+                  depthTest={false}
+                />
+              </mesh>
+              {/* Inner marker */}
+              <mesh>
+                <sphereGeometry args={[0.018, 16, 16]} />
+                <meshBasicMaterial 
+                  color="#ff0000"
+                  depthTest={false}
+                />
+              </mesh>
+            </group>
+          )}
         </mesh>
-        {/* Marker at clicked position */}
-        {markerPosition && (
-          <group position={markerPosition}>
-            {/* Outer ring for contrast */}
-            <mesh>
-              <sphereGeometry args={[0.025 * planetSize, 16, 16]} />
-              <meshBasicMaterial 
-                color="#000000"
-                transparent={true}
-                opacity={0.8}
-                depthTest={false}
-              />
-            </mesh>
-            {/* Inner marker */}
-            <mesh>
-              <sphereGeometry args={[0.018 * planetSize, 16, 16]} />
-              <meshBasicMaterial 
-                color="#ff0000"
-                depthTest={false}
-              />
-            </mesh>
-          </group>
-        )}
       </group>
     );
   }

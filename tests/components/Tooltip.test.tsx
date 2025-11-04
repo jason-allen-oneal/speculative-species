@@ -103,7 +103,7 @@ describe('Tooltip Component', () => {
 
   describe('Multiple Tooltips', () => {
     it('should handle multiple tooltips with different ids', () => {
-      const { container } = render(
+      render(
         <>
           <Tooltip id="tooltip1" text="Tooltip 1">
             <div>Element 1</div>
@@ -175,8 +175,7 @@ describe('Tooltip Component', () => {
       render(<Tooltip {...defaultProps} />);
       
       const tooltipText = screen.getByText('This is a test tooltip');
-      const style = window.getComputedStyle(tooltipText);
-      
+
       // Check that inline styles are applied (exact values may vary)
       expect(tooltipText).toHaveStyle({
         backgroundColor: 'rgba(0, 0, 0, 0.95)',
@@ -210,13 +209,6 @@ describe('Tooltip Component', () => {
     });
 
     it('should handle empty text', () => {
-      render(
-        <Tooltip id="empty" text="">
-          <div>Element</div>
-        </Tooltip>
-      );
-      
-      // The tooltip div exists even with empty text
       const { container } = render(
         <Tooltip id="empty" text="">
           <div>Element</div>
