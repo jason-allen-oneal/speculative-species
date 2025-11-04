@@ -105,6 +105,12 @@ export default function Planet({
     useEffect(() => {
       const size = TEXTURE_SIZE;
       
+      // Validate coarseMap before proceeding
+      if (!coarseMap || coarseMap.length !== size * size) {
+        console.warn('Invalid coarseMap, skipping texture generation');
+        return;
+      }
+      
       // Canvases
       const colorCanvas = document.createElement("canvas");
       colorCanvas.width = colorCanvas.height = size;
@@ -156,13 +162,29 @@ export default function Planet({
           // Hybrid terrain generation:
           // 1. Get coarse elevation from tectonic plates
           const idx = y * size + x;
-          const coarse = coarseMap[idx];
+          let coarse = coarseMap[idx];
+          
+          // Guard against invalid values - use fallback
+          if (!Number.isFinite(coarse)) {
+            console.warn(`Invalid coarse value at ${idx}: ${coarse}, using fallback`);
+            coarse = 0.5; // Default to mid-level
+          }
           
           // 2. Sample domain-warped noise for fine detail
-          const domainNoise = (domainWarpedNoise(nx, ny, nz, warpStrength, domainOctaves) + 1) / 2;
+          let domainNoise = (domainWarpedNoise(nx, ny, nz, warpStrength, domainOctaves) + 1) / 2;
           
           // 3. Sample ridged noise for mountain ridges
-          const ridges = ridgedNoise(nx, ny, nz, ridgedOctaves);
+          let ridges = ridgedNoise(nx, ny, nz, ridgedOctaves);
+          
+          // Guard against NaN from noise functions - use fallback
+          if (!Number.isFinite(domainNoise)) {
+            console.warn(`Invalid domainNoise at ${idx}: ${domainNoise}, using fallback`);
+            domainNoise = 0.5;
+          }
+          if (!Number.isFinite(ridges)) {
+            console.warn(`Invalid ridges at ${idx}: ${ridges}, using fallback`);
+            ridges = 0;
+          }
           
           // 4. Combine: coarse provides base, domain-warped adds variation, ridged adds mountains
           let elev = 0.6 * coarse + 0.3 * domainNoise + 0.1 * ridges;

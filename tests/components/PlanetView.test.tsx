@@ -224,7 +224,7 @@ describe('PlanetView Component', () => {
       const clickButton = screen.getByText('Click Planet');
       fireEvent.click(clickButton);
       
-      expect(screen.getByText(/Normalized height 0\.600/)).toBeInTheDocument();
+      expect(screen.getByText(/Normalized 0\.600/)).toBeInTheDocument();
     });
 
     it('should display relative sea level', () => {

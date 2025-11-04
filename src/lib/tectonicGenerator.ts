@@ -274,34 +274,76 @@ export function computeCoarseElevation(
   let maxElev = -Infinity;
   
   for (let i = 0; i < elevation.length; i++) {
-    minElev = Math.min(minElev, elevation[i]);
-    maxElev = Math.max(maxElev, elevation[i]);
+    // Skip any NaN or Infinity values in the scan
+    if (Number.isFinite(elevation[i])) {
+      minElev = Math.min(minElev, elevation[i]);
+      maxElev = Math.max(maxElev, elevation[i]);
+    }
+  }
+  
+  // If all values were invalid, use safe defaults
+  if (!Number.isFinite(minElev) || !Number.isFinite(maxElev)) {
+    console.warn('Invalid elevation data detected, using defaults');
+    for (let i = 0; i < elevation.length; i++) {
+      elevation[i] = 0.5;
+    }
+    minElev = 0.5;
+    maxElev = 0.5;
   }
 
   const range = maxElev - minElev;
   if (range > 0) {
     for (let i = 0; i < elevation.length; i++) {
-      elevation[i] = (elevation[i] - minElev) / range;
+      // Ensure finite values before normalization
+      if (Number.isFinite(elevation[i])) {
+        elevation[i] = (elevation[i] - minElev) / range;
+      } else {
+        elevation[i] = 0.5; // Default to middle value
+      }
+    }
+  } else {
+    // All elevations are the same - normalize to 0.5
+    for (let i = 0; i < elevation.length; i++) {
+      elevation[i] = 0.5;
     }
   }
 
   // Adjust to match desired ocean fraction
   // Find the elevation threshold that gives us the right ocean coverage
-  // Use a typed-array copy + in-place sort to reduce peak memory compared to building a JS-number array
-  const sorted = elevation.slice().sort((a, b) => a - b);
+  // Use sampling approach to reduce memory usage - we don't need to sort all 4M+ pixels
+  // Sample every Nth pixel for threshold calculation (gives us ~16k samples for 2048x2048)
+  const sampleInterval = Math.max(1, Math.floor(Math.sqrt(elevation.length) / 4));
+  const samples: number[] = [];
+  for (let i = 0; i < elevation.length; i += sampleInterval) {
+    if (Number.isFinite(elevation[i])) {
+      samples.push(elevation[i]);
+    }
+  }
+  
+  // Ensure we have samples to work with
+  if (samples.length === 0) {
+    console.warn('No valid elevation samples found');
+    return elevation;
+  }
+  
+  samples.sort((a, b) => a - b);
+  
   // Clamp index to valid range (handles oceanFraction == 1.0)
-  const oceanThresholdIndex = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * oceanFraction)));
-  const oceanThreshold = sorted[oceanThresholdIndex];
+  const oceanThresholdIndex = Math.max(0, Math.min(samples.length - 1, Math.floor(samples.length * oceanFraction)));
+  const oceanThreshold = samples[oceanThresholdIndex];
 
   // Remap so that oceanThreshold becomes approximately 0.4 (sea level in the noise)
+  // Guard against division by zero and ensure valid threshold
+  const safeOceanThreshold = Math.max(0.001, oceanThreshold);
+  
   for (let i = 0; i < elevation.length; i++) {
-    if (elevation[i] < oceanThreshold) {
-      elevation[i] = elevation[i] / oceanThreshold * 0.4;
+    if (elevation[i] < safeOceanThreshold) {
+      elevation[i] = elevation[i] / safeOceanThreshold * 0.4;
     } else {
       // Avoid division by zero when oceanThreshold is 1.0 or very close
-      const range = 1 - oceanThreshold;
+      const range = 1 - safeOceanThreshold;
       if (range > 0.001) {
-        elevation[i] = 0.4 + (elevation[i] - oceanThreshold) / range * 0.6;
+        elevation[i] = 0.4 + (elevation[i] - safeOceanThreshold) / range * 0.6;
       } else {
         // All land is at sea level when oceanFraction is 1.0
         elevation[i] = 0.4;
