@@ -56,9 +56,9 @@ export default function Planet({
     // Base value normalized to Earth (tectonic=5, gravity=1.0 => ~0.3)
     // Normalization: Earth's tectonic value of 5 divided by 16.67 yields 0.3 baseline variation
     const TECTONIC_NORMALIZATION_FACTOR = 16.67;
-    const baseTopographicVariation = THREE.MathUtils.clamp(tectonic / TECTONIC_NORMALIZATION_FACTOR, 0, 1);
-    const gravityFactor = Math.min(2.0, 1.0 / gravity); // Lower gravity allows more variation
-    const topographicVariation = THREE.MathUtils.clamp(baseTopographicVariation * gravityFactor, 0, 1);
+    const baseTopographicVariation = useMemo(() => THREE.MathUtils.clamp(tectonic / TECTONIC_NORMALIZATION_FACTOR, 0, 1), [tectonic]);
+    const gravityFactor = useMemo(() => Math.min(2.0, 1.0 / gravity), [gravity]); // Lower gravity allows more variation
+    const topographicVariation = useMemo(() => THREE.MathUtils.clamp(baseTopographicVariation * gravityFactor, 0, 1), [baseTopographicVariation, gravityFactor]);
     
     // === Constants for 3D Relief ===
     // Topographic variation controls terrain roughness (0-1 scale, where 0.3 is Earth-like)
@@ -66,11 +66,11 @@ export default function Planet({
     const terrainRoughness = topographicVariation;
     
     // Max displacement scale relative to the radius (1.0). Controls mountain height.
-    const DISPLACEMENT_SCALE = 0.04 * planetSize * (0.5 + terrainRoughness); 
+    const DISPLACEMENT_SCALE = useMemo(() => 0.04 * planetSize * (0.5 + terrainRoughness), [planetSize, terrainRoughness]); 
     // Terrain detail multiplier applied to the height map before displacement.
-    const TERRAIN_CONTRAST = 0.5 + terrainRoughness * 1.5; 
+    const TERRAIN_CONTRAST = useMemo(() => 0.5 + terrainRoughness * 1.5, [terrainRoughness]); 
     // Bias is half of the scale, used to center the displacement around the sphere's radius.
-    const DISPLACEMENT_BIAS = -DISPLACEMENT_SCALE * 0.5;
+    const DISPLACEMENT_BIAS = useMemo(() => -DISPLACEMENT_SCALE * 0.5, [DISPLACEMENT_SCALE]);
   
     // === Rotation speed calculation ===
     const rotationSpeed = useMemo(
@@ -301,7 +301,7 @@ export default function Planet({
       displacementFieldRef.current = displacementField;
       sampleMetaRef.current = { seaLevel, size };
 
-    }, [oceanFraction, tectonic, _gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST, coarseMap]); 
+    }, [oceanFraction, tectonic, gravity, DISPLACEMENT_SCALE, TERRAIN_CONTRAST, coarseMap]); 
   
   
     // === AXIS LINE === (Keeping existing code)
