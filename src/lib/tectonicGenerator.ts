@@ -60,6 +60,9 @@ export function generatePlateMap(
   const plateIndex = new Uint16Array(mapSize * mapSize);
   const plates: Plate[] = [];
 
+  // Ensure we have at least one plate to avoid indexing into an empty plates array
+  plateCount = Math.max(1, Math.floor(plateCount));
+
   // Step 1: Generate seed points on the sphere
   const seedPoints: Array<{ u: number; v: number; id: number }> = [];
   
@@ -126,7 +129,7 @@ export function generatePlateMap(
   // Step 3: Create plate objects with types and velocities
   // Ensure at least one continental plate exists to prevent "no land" issue
   // Even highly oceanic planets should have some land mass
-  const numOceanic = Math.min(plateCount - 1, Math.round(plateCount * oceanFraction));
+  const numOceanic = Math.max(0, Math.min(plateCount - 1, Math.round(plateCount * oceanFraction)));
   
   for (let i = 0; i < plateCount; i++) {
     // First numOceanic plates are oceanic, rest are continental
@@ -284,8 +287,10 @@ export function computeCoarseElevation(
 
   // Adjust to match desired ocean fraction
   // Find the elevation threshold that gives us the right ocean coverage
-  const sorted = Array.from(elevation).sort((a, b) => a - b);
-  const oceanThresholdIndex = Math.floor(sorted.length * oceanFraction);
+  // Use a typed-array copy + in-place sort to reduce peak memory compared to building a JS-number array
+  const sorted = elevation.slice().sort((a, b) => a - b);
+  // Clamp index to valid range (handles oceanFraction == 1.0)
+  const oceanThresholdIndex = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * oceanFraction)));
   const oceanThreshold = sorted[oceanThresholdIndex];
 
   // Remap so that oceanThreshold becomes approximately 0.4 (sea level in the noise)
