@@ -355,5 +355,40 @@ export function computeCoarseElevation(
     }
   }
 
+  smoothElevationMap(elevation, width, height, 2);
+
   return elevation;
+}
+
+function smoothElevationMap(
+  elevation: Float32Array,
+  width: number,
+  height: number,
+  iterations = 1
+) {
+  if (iterations <= 0) return;
+  const buffer = new Float32Array(elevation.length);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let sum = 0;
+        let count = 0;
+
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = Math.min(height - 1, Math.max(0, y + dy));
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = (x + dx + width) % width;
+            const idx = ny * width + nx;
+            sum += elevation[idx];
+            count++;
+          }
+        }
+
+        buffer[y * width + x] = sum / count;
+      }
+    }
+
+    elevation.set(buffer);
+  }
 }

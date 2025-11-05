@@ -69,12 +69,12 @@ export default function PhysicsInfo({
     {
       label: "Likely Cloud Cover",
       value: `${(cloudSuggestion.suggestedFraction * 100).toFixed(0)}% ${cloudStatusCopy[cloudSuggestion.status]}`,
-      detail: "Cloud slider stays manual for fine tuning",
+      detail: "Rendering uses the suggested cloud fraction automatically",
     },
     {
       label: "Wind/Coriolis",
       value: windStatusCopy[wind.qualitative],
-      detail: `Estimated ${windSpeedKmh.toFixed(0)} km/h at the equator`,
+      detail: `Coriolis reference speed ~${wind.equatorialVelocity.toFixed(0)} m/s (~${windSpeedKmh.toFixed(0)} km/h) at the equator`,
     },
     {
       label: "Room for Moons",

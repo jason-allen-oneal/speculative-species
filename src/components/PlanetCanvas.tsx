@@ -5,20 +5,22 @@ import Planet from "./stellar/Planet";
 import { getStarData, PHYSICAL_CONSTANTS } from "@/lib/constants";
 import * as THREE from "three";
 
-export default function PlanetCanvas({
-    gravity,
-    ocean,
-    axialTilt,
-    pressure,
-    orbitalDist,
-    rotationPeriod,
-    cloudCover,
-    tectonic,
-    planetSize,
-    onPlanetClick,
-    isPaused,
-    starType,
-}: PlanetCanvasProps) {
+export default function PlanetCanvas(props: PlanetCanvasProps & { surfaceTempK?: number }) {
+    const {
+        gravity,
+        ocean,
+        axialTilt,
+        pressure,
+        surfaceTempK,
+        orbitalDist,
+        rotationPeriod,
+        cloudCover,
+        tectonic,
+        planetSize,
+        onPlanetClick,
+        isPaused,
+        starType,
+    } = props;
     const [markerPosition, setMarkerPosition] = useState<[number, number, number] | undefined>(undefined);
 
     const star = useMemo(() => getStarData(starType), [starType]);
@@ -40,7 +42,6 @@ export default function PlanetCanvas({
     const ambientColor = useMemo(() => starColor.clone().multiplyScalar(0.4), [starColor]);
     const hemTop = useMemo(() => starColor.clone().offsetHSL(0, -0.1, 0.15), [starColor]);
     const hemBottom = "#080820";
-
     const handlePlanetClick = (info: PlanetClickResult) => {
         setMarkerPosition(info.localPosition);
         if (onPlanetClick) {
@@ -73,6 +74,7 @@ export default function PlanetCanvas({
                     ocean={ocean}
                     axialTilt={axialTilt}
                     pressure={pressure}
+                    surfaceTempK={surfaceTempK}
                     orbitalDist={orbitalDist}
                     rotationPeriod={rotationPeriod}
                     cloudCover={cloudCover}

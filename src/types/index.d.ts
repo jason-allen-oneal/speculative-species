@@ -113,6 +113,7 @@ interface PlanetCanvasProps {
     ocean: number;
     axialTilt: number;
     pressure: number;
+    surfaceTempK?: number;
     orbitalDist: number;
     rotationPeriod: number;
     cloudCover: number;
@@ -128,6 +129,7 @@ interface PlanetProps {
     ocean: number;
     axialTilt: number;
     pressure: number;
+    surfaceTempK?: number;
     orbitalDist: number;
     rotationPeriod: number;
     cloudCover: number;
@@ -136,6 +138,7 @@ interface PlanetProps {
     onPlanetClick?: (info: PlanetClickResult) => void;
     isPaused?: boolean;
     markerPosition?: [number, number, number];
+    useShader?: boolean;
 }
 
 interface SurfaceGravityParams {

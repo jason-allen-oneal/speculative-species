@@ -1,9 +1,16 @@
-export function createNoise2D() {
+type Noise2D = (x: number, y: number) => number;
+
+interface NoiseFactory {
+  _rnd?: () => number;
+}
+
+export function createNoise2D(): Noise2D {
     // Precompute random gradient vectors and a permutation table (P)
-    const p = [];
+    // Use an attached deterministic RNG (if present) or fall back to Math.random.
+    const p: number[] = [];
+    const rnd = ((createNoise2D as unknown) as NoiseFactory)._rnd || Math.random;
     for (let i = 0; i < 256; i++) {
-      // Using Math.random() for simplicity, a true seed would be better for consistency
-      p[i] = Math.floor(Math.random() * 256);
+      p[i] = Math.floor(rnd() * 256);
     }
     const perm: number[] = [];
     for (let i = 0; i < 512; i++) {
@@ -51,6 +58,39 @@ export function createNoise2D() {
     };
   }
 
+// Cache heavy noise generators so we do not rebuild permutation tables per sample.
+const noiseCache: Record<string, Noise2D | undefined> = {};
+// Hash a string into a 32-bit unsigned integer for seeding
+function hashStringToInt(s: string) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const getNoiseGenerator = (key: string): Noise2D => {
+  if (!noiseCache[key]) {
+    // Create a deterministic RNG seeded from the key so different noise generators
+    // (warp1, warp2, base) are distinct but reproducible regardless of global Math.random usage.
+    const seed = hashStringToInt(key || "default");
+    // mulberry32 implementation
+    const mulberry32 = (a: number) => () => {
+      let t = (a += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  // Attach rnd for createNoise2D to consume
+  ((createNoise2D as unknown) as NoiseFactory)._rnd = mulberry32(seed);
+  noiseCache[key] = createNoise2D();
+  // Clear attached rnd to avoid leaking into other calls
+  delete ((createNoise2D as unknown) as NoiseFactory)._rnd;
+  }
+  return noiseCache[key] as Noise2D;
+};
+
 /**
  * Generate domain-warped noise by using one noise function to offset 
  * the sampling coordinates of another noise function, with multiple octaves for fBm
@@ -69,9 +109,9 @@ export function domainWarpedNoise(
   warpStrength: number,
   octaves: number
 ): number {
-  const noise2D = createNoise2D();
-  const warpNoise1 = createNoise2D();
-  const warpNoise2 = createNoise2D();
+  const noise2D = getNoiseGenerator("domain:base");
+  const warpNoise1 = getNoiseGenerator("domain:warp1");
+  const warpNoise2 = getNoiseGenerator("domain:warp2");
 
   // Use noise to warp the input coordinates
   const warpScale = 2.0;
@@ -118,7 +158,7 @@ export function ridgedNoise(
   nz: number,
   octaves: number
 ): number {
-  const noise2D = createNoise2D();
+  const noise2D = getNoiseGenerator("ridged:base");
 
   let value = 0;
   let amplitude = 1.0;

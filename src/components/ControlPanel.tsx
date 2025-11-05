@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Tooltip from "@/components/Tooltip";
 
 export default function ControlPanel({
   ocean,
@@ -30,6 +29,7 @@ export default function ControlPanel({
   });
 
   const applyChanges = () => {
+    // Apply local values to parent state via setters
     setOcean(localValues.ocean);
     setAxialTilt(localValues.axialTilt);
     setOrbitalDist(localValues.orbitalDist);
@@ -37,104 +37,117 @@ export default function ControlPanel({
     setCloudCover(localValues.cloudCover);
     setTectonic(localValues.tectonic);
     setPlanetSize(localValues.planetSize);
-    onGenerate(localValues);
+    if (onGenerate) onGenerate(localValues as Record<string, number>);
   };
 
-  const handleChange = (key: keyof typeof localValues, value: number) => {
+  const handleSlider = (key: string, value: number) => {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
-    <div className="w-full flex flex-wrap items-center justify-center gap-3 p-3 bg-gray-900/80 backdrop-blur-md border-b border-gray-700">
-      {[
-        {
-          id: "ocean",
-          label: "Ocean Coverage",
-          min: 0,
-          max: 1,
-          step: 0.01,
-          text: "Fraction of the planet covered by oceans. More water moderates temperature but reduces visible land area.",
-        },
-        {
-          id: "axialTilt",
-          label: "Axial Tilt (°)",
-          min: 0,
-          max: 45,
-          step: 0.5,
-          text: "Angle between the rotation axis and orbital plane. Controls seasonal variation—higher tilt means harsher seasons and stronger polar contrast.",
-        },
-        {
-          id: "orbitalDist",
-          label: "Orbital Distance (AU)",
-          min: 0.1,
-          max: 5,
-          step: 0.1,
-          text: "Distance from the parent star in astronomical units. Closer orbits mean more stellar radiation and higher temperatures; farther means colder, dimmer light.",
-        },
-        {
-          id: "rotationPeriod",
-          label: "Day Length (hours)",
-          min: 4,
-          max: 96,
-          step: 1,
-          text: "Time taken for one full rotation. Shorter days spin the planet faster (stronger Coriolis effects and faster winds), longer days mean slower rotation and wider temperature swings.",
-        },
-        {
-          id: "cloudCover",
-          label: "Cloud Cover (%) [DISABLED]",
-          min: 0,
-          max: 1,
-          step: 0.05,
-          text: "Proportion of the sky covered by clouds. Currently disabled - does not affect planet rendering.",
-          disabled: true,
-        },
-        {
-          id: "tectonic",
-          label: "Tectonic Activity",
-          min: 0,
-          max: 10,
-          step: 0.5,
-          text: "Relative geological activity. Drives mountain building and volcanism; higher values mean rougher terrain and more active crust.",
-        },
-        {
-          id: "planetSize",
-          label: "Planet Radius (×Earth)",
-          min: 0.3,
-          max: 3,
-          step: 0.05,
-          text: "Scales the overall planet size. Larger planets have stronger gravity and more curvature; smaller ones look rockier and airless.",
-        },
-      ].map((slider) => (
-        <Tooltip key={slider.id} id={slider.id} text={slider.text}>
-          <label className={`flex flex-col items-center text-xs text-gray-200 whitespace-nowrap ${slider.disabled ? 'opacity-50' : ''}`}>
-            <span>
-              {slider.label}:{" "}
-              {slider.id === "ocean" || slider.id === "cloudCover"
-                ? Math.round(localValues[slider.id as keyof typeof localValues] * 100) + "%"
-                : localValues[slider.id as keyof typeof localValues].toFixed(2)}
-            </span>
-            <input
-              type="range"
-              min={slider.min}
-              max={slider.max}
-              step={slider.step}
-              value={localValues[slider.id as keyof typeof localValues]}
-              onChange={(e) =>
-                handleChange(slider.id as keyof typeof localValues, parseFloat(e.target.value))
-              }
-              className="w-28 accent-blue-500"
-              disabled={slider.disabled}
-            />
-          </label>
-        </Tooltip>
-      ))}
+    <div className="w-full bg-gray-900/60 border-b border-gray-800 px-4 py-2 flex items-center gap-4">
+      <div className="flex-1 flex items-center gap-6">
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Ocean Coverage: {Math.round(localValues.ocean * 100)}%</label>
+          <input
+            aria-label="Ocean Coverage"
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={localValues.ocean}
+            onChange={(e) => handleSlider("ocean", parseFloat(e.target.value))}
+          />
+        </div>
 
-      <button
-        onClick={applyChanges}
-        className="ml-4 px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium"
-      >
-        Generate
-      </button>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Axial Tilt: {localValues.axialTilt.toFixed(2)}°</label>
+          <input
+            aria-label="Axial Tilt"
+            type="range"
+            min={0}
+            max={90}
+            step={0.01}
+            value={localValues.axialTilt}
+            onChange={(e) => handleSlider("axialTilt", parseFloat(e.target.value))}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Orbital Distance: {localValues.orbitalDist.toFixed(2)} AU</label>
+          <input
+            aria-label="Orbital Distance"
+            type="range"
+            min={0.1}
+            max={10}
+            step={0.01}
+            value={localValues.orbitalDist}
+            onChange={(e) => handleSlider("orbitalDist", parseFloat(e.target.value))}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Day Length: {localValues.rotationPeriod.toFixed(1)} hrs</label>
+          <input
+            aria-label="Day Length"
+            type="range"
+            min={1}
+            max={1000}
+            step={0.1}
+            value={localValues.rotationPeriod}
+            onChange={(e) => handleSlider("rotationPeriod", parseFloat(e.target.value))}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Cloud Cover: {Math.round(localValues.cloudCover * 100)}%</label>
+          <input
+            aria-label="Cloud Cover"
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={localValues.cloudCover}
+            onChange={(e) => handleSlider("cloudCover", parseFloat(e.target.value))}
+            disabled
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Tectonic Activity: {localValues.tectonic.toFixed(2)}</label>
+          <input
+            aria-label="Tectonic Activity"
+            type="range"
+            min={0}
+            max={10}
+            step={0.01}
+            value={localValues.tectonic}
+            onChange={(e) => handleSlider("tectonic", parseFloat(e.target.value))}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-300">Planet Radius: {localValues.planetSize.toFixed(2)}×</label>
+          <input
+            aria-label="Planet Radius"
+            type="range"
+            min={0.1}
+            max={5}
+            step={0.01}
+            value={localValues.planetSize}
+            onChange={(e) => handleSlider("planetSize", parseFloat(e.target.value))}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={applyChanges}
+          className="rounded-md bg-blue-600 px-3 py-1 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          Generate
+        </button>
+      </div>
     </div>
-  );
-}
+    );
+  }

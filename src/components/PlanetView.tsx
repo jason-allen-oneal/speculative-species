@@ -183,6 +183,7 @@ export default function PlanetView({config}: PlanetViewProps) {
                             ocean={ocean}
                             axialTilt={axialTilt}
                             pressure={derivedPressureAtm}
+                            surfaceTempK={temperatureModel.surfaceTemperature}
                             orbitalDist={orbitalDist}
                             rotationPeriod={rotationPeriod}
                             cloudCover={cloudCover}
